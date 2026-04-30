@@ -4,10 +4,11 @@ import time
 from datetime import datetime
 
 class SharedMemoryReader:
-    def __init__(self, map_name="VirtualDjFeatures", buffer_size=1024):
+    def __init__(self, map_name="VirtualDjFeatures", buffer_size=8192):
         self.map_name = map_name
         self.buffer_size = buffer_size
         self.mm = None
+        self.fft_bin_count = 1024
 
     def connect(self):
         try:
@@ -24,18 +25,31 @@ class SharedMemoryReader:
             return None
         
         self.mm.seek(0)
-        data = self.mm.read(28) # 4+4+4+4+4+8 bytes (RMS, Centroid, Peak, Authority, SongIndex, Ticks)
         
-        # Unpack: 5 ints/floats and 1 long long
+        # Read Header (40 bytes)
+        header_data = self.mm.read(40)
         try:
-            rms, centroid, peak, authority, song_index, ticks = struct.unpack('fffi i q', data)
+            # i: seq, i: lock, f: rms, f: centroid, f: peak, i: auth, i: song, q: ticks, i: peak_flag
+            seq, lock, rms, centroid, peak, auth, song, ticks, peak_flag = struct.unpack('i i fff i i q i', header_data)
+            
+            # If C# is currently writing, skip this frame to prevent tearing
+            if lock == 1:
+                return None
+
+            # Read FFT Data (1024 floats = 4096 bytes)
+            fft_data = self.mm.read(self.fft_bin_count * 4)
+            fft_array = struct.unpack(f'{self.fft_bin_count}f', fft_data)
+
             return {
+                "sequence": seq,
                 "rms": rms,
                 "centroid": centroid,
                 "peak": peak,
-                "authority": authority, # 0 = AI, 1 = Human
-                "song_index": song_index,
-                "ticks": ticks
+                "authority": auth,
+                "song_index": song,
+                "ticks": ticks,
+                "is_peak": peak_flag == 1,
+                "fft": list(fft_array)
             }
         except struct.error:
             return None

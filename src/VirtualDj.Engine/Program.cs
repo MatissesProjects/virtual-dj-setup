@@ -31,8 +31,8 @@ namespace VirtualDj.Engine
 
             dspPipeline.FeaturesCalculated += (s, frame) =>
             {
-                // 1. Write to Shared Memory for Python (passing current song index)
-                sharedMemoryService.WriteFeatureFrame(frame, 0); // Hardcoded index for now, will dynamic later
+                // 1. Write to Shared Memory for Python (passing current song index and full FFT)
+                sharedMemoryService.WriteFeatureFrame(frame, 0, frame.MagnitudeSpectrum ?? Array.Empty<float>());
 
                 // 2. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);

@@ -177,12 +177,20 @@ namespace VirtualDj.Engine
             float spectralCentroid = spectralSum > 0 ? weightedSpectralSum / spectralSum : 0;
             float peakFrequency = peakIndex * binWidth;
 
+            // Extract full magnitude array for neural bridge
+            float[] magnitudes = new float[binCount];
+            for (int i = 0; i < binCount; i++)
+            {
+                magnitudes[i] = (float)Math.Sqrt(_fftBuffer[i].X * _fftBuffer[i].X + _fftBuffer[i].Y * _fftBuffer[i].Y);
+            }
+
             FeaturesCalculated?.Invoke(this, new FeatureFrame
             {
                 Rms = rms,
                 SpectralCentroid = spectralCentroid,
                 PeakFrequency = peakFrequency,
                 Authority = Authority,
+                MagnitudeSpectrum = magnitudes, // New high-bandwidth data
                 Timestamp = DateTime.UtcNow
             });
         }
