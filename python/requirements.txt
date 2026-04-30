@@ -1,0 +1,9 @@
+torch
+numpy
+scipy
+pandas
+pyaudio
+matplotlib
+grpcio
+grpcio-tools
+# Add other libraries as needed
