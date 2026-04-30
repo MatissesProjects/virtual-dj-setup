@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtual DJ Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #121212; color: #e0e0e0; margin: 0; padding: 20px; }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .card { background: #1e1e1e; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        .vibe-card { text-align: center; }
+        .vibe-name { font-size: 2.5em; color: #bb86fc; margin: 10px 0; }
+        .rms-bar-container { background: #333; height: 30px; border-radius: 15px; overflow: hidden; margin-top: 10px; }
+        .rms-bar { background: #03dac6; height: 100%; transition: width 0.1s; }
+        .label { font-size: 0.9em; color: #888; text-transform: uppercase; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { background: #bb86fc; border: none; padding: 10px 20px; border-radius: 4px; color: #000; cursor: pointer; font-weight: bold; }
+        button:hover { background: #9965f4; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <h1>🎧 Virtual DJ Control Center</h1>
+        <div class="dashboard">
+            <div class="card vibe-card">
+                <div class="label">Current AI Intent</div>
+                <div class="vibe-name">{{ vibe }}</div>
+                <div class="label">Authority: <span :style="{color: authority === 'HUMAN' ? '#cf6679' : '#03dac6'}">{{ authority }}</span></div>
+            </div>
+            <div class="card">
+                <div class="label">Master RMS</div>
+                <div class="rms-bar-container">
+                    <div class="rms-bar" :style="{ width: rmsPercent + '%' }"></div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <div class="label">Spectral Centroid: {{ centroid }} Hz</div>
+                </div>
+            </div>
+        </div>
+        <div class="controls">
+            <button @click="takeover">Manual Override</button>
+            <button @click="yieldToAi" style="background: #03dac6;">Yield to AI</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createApp, ref, onMounted } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
+
+        createApp({
+            setup() {
+                const vibe = ref('IDLE')
+                const authority = ref('AI')
+                const rmsPercent = ref(0)
+                const centroid = ref(0)
+                let ws = null
+
+                const connect = () => {
+                    ws = new WebSocket('ws://localhost:8000/ws')
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data)
+                        vibe.value = data.vibe
+                        authority.value = data.authority
+                        rmsPercent.value = Math.min(100, Math.max(0, (data.rms + 60) / 60 * 100))
+                        centroid.value = Math.round(data.centroid)
+                    }
+                    ws.onclose = () => setTimeout(connect, 1000)
+                }
+
+                onMounted(connect)
+
+                const takeover = () => {
+                    // Send command to python which sends to C#
+                    fetch('http://localhost:8000/takeover', { method: 'POST' })
+                }
+
+                const yieldToAi = () => {
+                    fetch('http://localhost:8000/yield', { method: 'POST' })
+                }
+
+                return { vibe, authority, rmsPercent, centroid, takeover, yieldToAi }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>
