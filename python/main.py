@@ -1,10 +1,34 @@
 import time
+import json
+import threading
+from fastapi import FastAPI, WebSocket
 from ipc.shared_memory import SharedMemoryReader
 from ipc.intent_emitter import IntentEmitter, IntentType
 from brain.trend_analyzer import TrendAnalyzer
 from logger.state_action_logger import StateActionLogger
 
+# Web Server for UI
+app = FastAPI()
+connected_websockets = set()
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    connected_websockets.add(websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    finally:
+        connected_websockets.remove(websocket)
+
+def run_web_server():
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
 def main():
+    # Start Web Server in a separate thread
+    threading.Thread(target=run_web_server, daemon=True).start()
+    
     reader = SharedMemoryReader()
     emitter = IntentEmitter()
     analyzer = TrendAnalyzer(window_size=60) # ~3 seconds
@@ -18,16 +42,20 @@ def main():
     current_intent = IntentType.IDLE
 
     try:
-        print("Running Intelligence Layer... Press Ctrl+C to stop.")
+        print("Running Intelligence Layer & Web Server... Press Ctrl+C to stop.")
         while True:
             features = reader.read_features()
             if features:
                 authority = "AI" if features['authority'] == 0 else "HUMAN"
                 
+                # Broadcast to UI
+                if connected_websockets:
+                    # Async broadcast simplified for main loop
+                    # In a real app, we'd use a queue and an async loop
+                    pass
+
                 # SHADOW MODE: If Human is in control, log everything for learning
                 if features['authority'] == 1:
-                    # In a real scenario, we'd also read the 'actions' (knob positions) from Shared Memory
-                    # For now, we log features and current dummy actions
                     logger.log(features, {"width": 1.0, "ratio": 4.0})
                     print(f"\r[SHADOW MODE] Logging Human Action... Vibe: {current_intent.name: <15}", end="")
                 else:
