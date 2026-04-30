@@ -17,6 +17,6 @@ To provide a true professional DJ experience, we need tactile control and a rich
     -   Add virtual faders that can also trigger `ForceManualOverride()`.
 
 ## Success Criteria
-- [ ] Physical MIDI knob movement changes C# DSP parameters instantly.
-- [ ] Vue dashboard shows real-time frequency/vibe data from the Python brain.
-- [ ] Full end-to-end loop: MIDI -> C# -> Python (Shadow Mode) -> Vue (Viz).
+- [x] Physical MIDI knob movement changes C# DSP parameters instantly.
+- [x] Vue dashboard shows real-time frequency/vibe data from the Python brain.
+- [x] Full end-to-end loop: MIDI -> C# -> Python (Shadow Mode) -> Vue (Viz).
