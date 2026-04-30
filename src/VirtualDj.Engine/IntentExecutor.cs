@@ -20,10 +20,9 @@ namespace VirtualDj.Engine
             switch (intent)
             {
                 case IntentType.CreateTension:
-                    // Increase width and ratio, maybe add make-up gain
-                    _pipeline.Width = 2.0f; 
+                    // Use smooth automation instead of hard jump
+                    _pipeline.AutomateWidth(2.5f, 4000, 44100); // 4 second fade
                     _pipeline.CompressionRatio = 8.0f;
-                    Console.WriteLine("[MACRO] Tension building: Widening stereo and increasing compression.");
                     break;
 
                 case IntentType.ExecuteDrop:
