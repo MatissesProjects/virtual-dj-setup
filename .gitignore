@@ -42,3 +42,5 @@ coverage.xml
 # Project Specific
 VirtualDjFeatures
 memory/
+node_modules/
+**/node_modules/
