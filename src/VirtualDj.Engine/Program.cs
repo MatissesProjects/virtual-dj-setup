@@ -14,6 +14,7 @@ namespace VirtualDj.Engine
             using var intentListener = new IntentListener();
             var dspPipeline = new DspPipeline(2048);
             var intentExecutor = new IntentExecutor(dspPipeline);
+            using var midiService = new MidiService(dspPipeline);
             
             float[] floatBuffer = new float[8192];
 
@@ -30,7 +31,7 @@ namespace VirtualDj.Engine
                 // 2. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
-                Console.Write($"\rRMS: {decibels:F1} dB | Centroid: {frame.SpectralCentroid:F0} Hz | Peak: {frame.PeakFrequency:F0} Hz    ");
+                Console.Write($"\rRMS: {decibels:F1} dB | Centroid: {frame.SpectralCentroid:F0} Hz | Peak: {frame.PeakFrequency:F0} Hz | Width: {dspPipeline.Width:F1}    ");
             };
 
             captureService.DataAvailable += (s, e) =>
@@ -50,6 +51,7 @@ namespace VirtualDj.Engine
             };
 
             intentListener.Start();
+            midiService.Start();
             captureService.Start();
 
             Console.WriteLine("Press any key to stop... (Press 'M' to simulate manual override)");
@@ -72,6 +74,7 @@ namespace VirtualDj.Engine
             }
 
             captureService.Stop();
+            midiService.Stop();
             intentListener.Stop();
         }
     }
