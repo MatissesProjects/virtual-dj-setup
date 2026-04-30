@@ -17,6 +17,18 @@ namespace VirtualDj.Engine
         private readonly LimiterNode _limiter = new LimiterNode();
         private readonly StereoWidthNode _widthNode = new StereoWidthNode();
 
+        public float Width
+        {
+            get => _widthNode.Width;
+            set => _widthNode.Width = value;
+        }
+
+        public float CompressionRatio
+        {
+            get => _compressor.Ratio;
+            set => _compressor.Ratio = value;
+        }
+
         public event EventHandler<FeatureFrame>? FeaturesCalculated;
 
         public DspPipeline(int fftSize = 2048)

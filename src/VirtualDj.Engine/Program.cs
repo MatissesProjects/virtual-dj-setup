@@ -13,13 +13,13 @@ namespace VirtualDj.Engine
             using var sharedMemoryService = new SharedMemoryService();
             using var intentListener = new IntentListener();
             var dspPipeline = new DspPipeline(2048);
+            var intentExecutor = new IntentExecutor(dspPipeline);
             
             float[] floatBuffer = new float[8192];
 
             intentListener.IntentReceived += (intent) =>
             {
-                Console.WriteLine($"\n[INTENT RECEIVED] {intent}");
-                // TODO: Execute macro
+                intentExecutor.Execute(intent);
             };
 
             dspPipeline.FeaturesCalculated += (s, frame) =>
