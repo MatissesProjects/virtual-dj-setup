@@ -24,17 +24,17 @@ class SharedMemoryReader:
             return None
         
         self.mm.seek(0)
-        data = self.mm.read(24) # 4+4+4+4+8 bytes (RMS, Centroid, Peak, Authority, Ticks)
+        data = self.mm.read(28) # 4+4+4+4+4+8 bytes (RMS, Centroid, Peak, Authority, SongIndex, Ticks)
         
-        # Unpack: 4 floats (f) and 1 long long (q)
-        # Actually Authority is an int (i), so: fffiq
+        # Unpack: 5 ints/floats and 1 long long
         try:
-            rms, centroid, peak, authority, ticks = struct.unpack('fffiq', data)
+            rms, centroid, peak, authority, song_index, ticks = struct.unpack('fffi i q', data)
             return {
                 "rms": rms,
                 "centroid": centroid,
                 "peak": peak,
                 "authority": authority, # 0 = AI, 1 = Human
+                "song_index": song_index,
                 "ticks": ticks
             }
         except struct.error:

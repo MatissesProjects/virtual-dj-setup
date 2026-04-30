@@ -15,6 +15,12 @@ namespace VirtualDj.Engine
             var dspPipeline = new DspPipeline(2048);
             var intentExecutor = new IntentExecutor(dspPipeline);
             using var midiService = new MidiService(dspPipeline);
+            var playlistManager = new PlaylistManager();
+
+            // Mock Playlist
+            playlistManager.AddSong("Get Lucky", "Daft Punk");
+            playlistManager.AddSong("Blinding Lights", "The Weeknd");
+            playlistManager.AddSong("Levitating", "Dua Lipa");
             
             float[] floatBuffer = new float[8192];
 
@@ -25,13 +31,14 @@ namespace VirtualDj.Engine
 
             dspPipeline.FeaturesCalculated += (s, frame) =>
             {
-                // 1. Write to Shared Memory for Python
-                sharedMemoryService.WriteFeatureFrame(frame);
+                // 1. Write to Shared Memory for Python (passing current song index)
+                sharedMemoryService.WriteFeatureFrame(frame, 0); // Hardcoded index for now, will dynamic later
 
                 // 2. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
-                Console.Write($"\rRMS: {decibels:F1} dB | Centroid: {frame.SpectralCentroid:F0} Hz | Peak: {frame.PeakFrequency:F0} Hz | Width: {dspPipeline.Width:F1}    ");
+                var song = playlistManager.CurrentSong;
+                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Centroid: {frame.SpectralCentroid:F0} Hz | Auth: {frame.Authority}    ");
             };
 
             captureService.DataAvailable += (s, e) =>

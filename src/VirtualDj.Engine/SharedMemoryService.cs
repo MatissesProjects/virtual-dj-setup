@@ -15,14 +15,15 @@ namespace VirtualDj.Engine
             _accessor = _mmf.CreateViewAccessor();
         }
 
-        public void WriteFeatureFrame(FeatureFrame frame)
+        public void WriteFeatureFrame(FeatureFrame frame, int songIndex)
         {
             // Simple binary write
             _accessor.Write(0, frame.Rms);
             _accessor.Write(4, frame.SpectralCentroid);
             _accessor.Write(8, frame.PeakFrequency);
             _accessor.Write(12, (int)frame.Authority);
-            _accessor.Write(16, frame.Timestamp.ToBinary());
+            _accessor.Write(16, songIndex); // New field
+            _accessor.Write(20, frame.Timestamp.ToBinary());
         }
 
         public void Dispose()
