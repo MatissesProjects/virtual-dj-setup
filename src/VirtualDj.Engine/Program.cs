@@ -52,8 +52,24 @@ namespace VirtualDj.Engine
             intentListener.Start();
             captureService.Start();
 
-            Console.WriteLine("Press any key to stop...");
-            Console.ReadKey();
+            Console.WriteLine("Press any key to stop... (Press 'M' to simulate manual override)");
+            
+            while (true)
+            {
+                if (Console.KeyAvailable)
+                {
+                    var key = Console.ReadKey(true).Key;
+                    if (key == ConsoleKey.M)
+                    {
+                        dspPipeline.ForceManualOverride();
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                Thread.Sleep(100);
+            }
 
             captureService.Stop();
             intentListener.Stop();

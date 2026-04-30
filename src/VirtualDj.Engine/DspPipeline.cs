@@ -17,10 +17,43 @@ namespace VirtualDj.Engine
         private readonly LimiterNode _limiter = new LimiterNode();
         private readonly StereoWidthNode _widthNode = new StereoWidthNode();
 
+        private ControlAuthority _authority = ControlAuthority.Ai;
+        private DateTime _lastManualChange = DateTime.MinValue;
+        private readonly TimeSpan _manualOverrideTimeout = TimeSpan.FromSeconds(5);
+
+        public ControlAuthority Authority
+        {
+            get
+            {
+                // Auto-yield back to AI after timeout
+                if (_authority == ControlAuthority.Human && DateTime.UtcNow - _lastManualChange > _manualOverrideTimeout)
+                {
+                    _authority = ControlAuthority.Ai;
+                    Console.WriteLine("\n[AUTHORITY] Manual timeout -> Yielding to AI.");
+                }
+                return _authority;
+            }
+        }
+
+        public void ForceManualOverride()
+        {
+            if (_authority != ControlAuthority.Human)
+            {
+                Console.WriteLine("\n[AUTHORITY] Manual override detected -> Stripping AI control.");
+            }
+            _authority = ControlAuthority.Human;
+            _lastManualChange = DateTime.UtcNow;
+        }
+
         public float Width
         {
             get => _widthNode.Width;
-            set => _widthNode.Width = value;
+            set
+            {
+                _widthNode.Width = value;
+                // If the setter is called, we assume it's a manual change if the caller isn't the AI
+                // (Note: In a more robust version, we'd distinguish the caller)
+            }
         }
 
         public float CompressionRatio
@@ -149,6 +182,7 @@ namespace VirtualDj.Engine
                 Rms = rms,
                 SpectralCentroid = spectralCentroid,
                 PeakFrequency = peakFrequency,
+                Authority = Authority,
                 Timestamp = DateTime.UtcNow
             });
         }

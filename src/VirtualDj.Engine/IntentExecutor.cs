@@ -11,6 +11,12 @@ namespace VirtualDj.Engine
 
         public void Execute(IntentType intent)
         {
+            if (_pipeline.Authority == ControlAuthority.Human)
+            {
+                // Silent yield - we don't apply AI intents while human is in control
+                return;
+            }
+
             switch (intent)
             {
                 case IntentType.CreateTension:

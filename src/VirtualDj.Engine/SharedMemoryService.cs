@@ -21,7 +21,8 @@ namespace VirtualDj.Engine
             _accessor.Write(0, frame.Rms);
             _accessor.Write(4, frame.SpectralCentroid);
             _accessor.Write(8, frame.PeakFrequency);
-            _accessor.Write(12, frame.Timestamp.ToBinary());
+            _accessor.Write(12, (int)frame.Authority);
+            _accessor.Write(16, frame.Timestamp.ToBinary());
         }
 
         public void Dispose()
