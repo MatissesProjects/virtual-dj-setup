@@ -14,7 +14,7 @@ Raw capture is insufficient for a professional sound. This track adds the "glue"
     -   Expose parameters (Threshold, Gain, EQ bands) so they can be controlled via the Intelligence Layer later.
 
 ## Success Criteria
-- [ ] Audio passes through the compressor without artifacts.
-- [ ] Limiter successfully prevents clipping on aggressive gain boosts.
-- [ ] M/S processing allows widening or narrowing the stereo image.
-- [ ] Performance remains real-time (no significant latency increase).
+- [x] Audio passes through the compressor without artifacts.
+- [x] Limiter successfully prevents clipping on aggressive gain boosts.
+- [x] M/S processing allows widening or narrowing the stereo image.
+- [x] Performance remains real-time (no significant latency increase).
