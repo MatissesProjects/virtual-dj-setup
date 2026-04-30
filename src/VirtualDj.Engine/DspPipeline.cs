@@ -15,6 +15,7 @@ namespace VirtualDj.Engine
 
         private readonly CompressorNode _compressor = new CompressorNode();
         private readonly LimiterNode _limiter = new LimiterNode();
+        private readonly StereoWidthNode _widthNode = new StereoWidthNode();
 
         public event EventHandler<FeatureFrame>? FeaturesCalculated;
 
@@ -28,29 +29,57 @@ namespace VirtualDj.Engine
             _fftBuffer = new Complex[fftSize];
             _sampleBuffer = new float[fftSize];
             
-            // Default master-bus-ish settings
             _compressor.Threshold = 0.4f;
             _compressor.Ratio = 2.0f;
             _compressor.AttackMs = 20.0f;
             _compressor.ReleaseMs = 200.0f;
             _compressor.MakeUpGain = 1.2f;
+
+            _widthNode.Width = 1.2f; // Slight stereo enhancement by default
         }
 
         public void ProcessSamples(float[] samples, int count, WaveFormat format)
         {
-            // 1. Professional DSP Chain (Dynamics)
+            // 1. Professional DSP Chain (Dynamics & Stereo)
+            if (format.Channels == 2)
+            {
+                // De-interleave for stereo/MS processing
+                int frameCount = count / 2;
+                float[] left = new float[frameCount];
+                float[] right = new float[frameCount];
+                
+                for (int i = 0; i < frameCount; i++)
+                {
+                    left[i] = samples[i * 2];
+                    right[i] = samples[i * 2 + 1];
+                }
+
+                _widthNode.Process(left, right, frameCount);
+
+                // Re-interleave for dynamics (simplified linked processing)
+                for (int i = 0; i < frameCount; i++)
+                {
+                    samples[i * 2] = left[i];
+                    samples[i * 2 + 1] = right[i];
+                }
+            }
+
             _compressor.Process(samples, count, format.SampleRate);
             _limiter.Process(samples, count, format.SampleRate);
 
-            // 2. Buffer for analysis
-            for (int i = 0; i < count; i++)
+            // 2. Buffer for analysis (using mono-summed for FFT)
+            for (int i = 0; i < count; i += format.Channels)
             {
-                _sampleBuffer[_bufferOffset++] = samples[i];
+                float mono = 0;
+                for (int c = 0; c < format.Channels; c++) mono += samples[i + c];
+                mono /= format.Channels;
+
+                _sampleBuffer[_bufferOffset++] = mono;
 
                 if (_bufferOffset >= _fftSize)
                 {
                     PerformAnalysis(format);
-                    _bufferOffset = 0; // Simple non-overlapping for now, can add overlap later
+                    _bufferOffset = 0;
                 }
             }
         }
