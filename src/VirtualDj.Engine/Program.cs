@@ -11,9 +11,16 @@ namespace VirtualDj.Engine
 
             using var captureService = new WasapiCaptureService();
             using var sharedMemoryService = new SharedMemoryService();
+            using var intentListener = new IntentListener();
             var dspPipeline = new DspPipeline(2048);
             
             float[] floatBuffer = new float[8192];
+
+            intentListener.IntentReceived += (intent) =>
+            {
+                Console.WriteLine($"\n[INTENT RECEIVED] {intent}");
+                // TODO: Execute macro
+            };
 
             dspPipeline.FeaturesCalculated += (s, frame) =>
             {
@@ -42,12 +49,14 @@ namespace VirtualDj.Engine
                 dspPipeline.ProcessSamples(floatBuffer, sampleCount, captureService.WaveFormat);
             };
 
+            intentListener.Start();
             captureService.Start();
 
             Console.WriteLine("Press any key to stop...");
             Console.ReadKey();
 
             captureService.Stop();
+            intentListener.Stop();
         }
     }
 }
