@@ -13,6 +13,9 @@ namespace VirtualDj.Engine
         private readonly float[] _sampleBuffer;
         private int _bufferOffset;
 
+        private readonly CompressorNode _compressor = new CompressorNode();
+        private readonly LimiterNode _limiter = new LimiterNode();
+
         public event EventHandler<FeatureFrame>? FeaturesCalculated;
 
         public DspPipeline(int fftSize = 2048)
@@ -24,10 +27,22 @@ namespace VirtualDj.Engine
             _m = (int)Math.Log(fftSize, 2.0);
             _fftBuffer = new Complex[fftSize];
             _sampleBuffer = new float[fftSize];
+            
+            // Default master-bus-ish settings
+            _compressor.Threshold = 0.4f;
+            _compressor.Ratio = 2.0f;
+            _compressor.AttackMs = 20.0f;
+            _compressor.ReleaseMs = 200.0f;
+            _compressor.MakeUpGain = 1.2f;
         }
 
         public void ProcessSamples(float[] samples, int count, WaveFormat format)
         {
+            // 1. Professional DSP Chain (Dynamics)
+            _compressor.Process(samples, count, format.SampleRate);
+            _limiter.Process(samples, count, format.SampleRate);
+
+            // 2. Buffer for analysis
             for (int i = 0; i < count; i++)
             {
                 _sampleBuffer[_bufferOffset++] = samples[i];
