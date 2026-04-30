@@ -15,6 +15,6 @@ The system must be collaborative. If a human touches a control, the AI must yiel
     -   Define an action vector: `[CompressionRatio, Width, EQ_Low, EQ_Mid, EQ_High]`.
 
 ## Success Criteria
-- [ ] Manual changes instantly override AI intents.
-- [ ] Python detects manual mode and starts high-frequency logging.
-- [ ] SQLite database contains valid State-Action pairs.
+- [x] Manual changes instantly override AI intents.
+- [x] Python detects manual mode and starts high-frequency logging.
+- [x] SQLite database contains valid State-Action pairs.
