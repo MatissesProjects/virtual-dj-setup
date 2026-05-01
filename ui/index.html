@@ -42,6 +42,21 @@
                 <div class="rms-bar-container">
                     <div class="rms-bar" :style="{ width: rmsPercent + '%' }"></div>
                 </div>
+                
+                <div style="margin-top: 20px;">
+                    <div class="label">Crowd Vibe: <span style="color: #03dac6; font-weight: bold;">{{ crowd.status }}</span></div>
+                    <div class="rms-bar-container" style="height: 15px; background: #222;">
+                        <div class="rms-bar" :style="{ 
+                            width: ((crowd.vibe + 1) / 2 * 100) + '%', 
+                            background: crowd.vibe > 0 ? '#03dac6' : '#cf6679' 
+                        }"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #666; margin-top: 2px;">
+                        <span>BORED</span>
+                        <span>HYPED</span>
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px;">
                     <div class="label">Current Chords</div>
                     <div style="font-size: 1.2em; color: #03dac6; margin-top: 5px;">
@@ -101,6 +116,7 @@
                 const xfader = ref(0.5)
                 const classification = ref({ class: 'Unknown', confidence: 0 })
                 const stems = ref({ vocal: 1.0, drums: 1.0, bass: 1.0, other: 1.0 })
+                const crowd = ref({ vibe: 0, hype: 0, status: 'NEUTRAL' })
                 let ws = null
 
                 const connect = () => {
@@ -114,6 +130,7 @@
                         chords.value = data.chords || []
                         duckingFreq.value = data.ducking ? Math.round(data.ducking.freq) : 0
                         classification.value = data.classification || { class: 'Unknown', confidence: 0 }
+                        crowd.value = data.crowd || { vibe: 0, hype: 0, status: 'NEUTRAL' }
                         // Only sync xfader if not currently dragging? 
                         // For simplicity, just read it here for AI moves
                         if (authority.value === 'AI') {
@@ -155,7 +172,7 @@
                     fetch('http://localhost:8000/generate-bridge', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, updateXFader, updateStems, takeover, yieldToAi, generateBridge }
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, crowd, updateXFader, updateStems, takeover, yieldToAi, generateBridge }
             }
         }).mount('#app')
     </script>

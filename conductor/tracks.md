@@ -17,5 +17,5 @@
 - [Track 14: CNN-based Spectrogram Analysis](./tracks/track-14/index.md) - *Completed*
 - [Track 15: Low-Latency Stem Separation (Neural De-mixing)](./tracks/track-15/index.md) - *Completed*
 - [Track 16: Generative "Bridge" Transitions (Transformer Bridge)](./tracks/track-16/index.md) - *Completed*
-- [Track 17: Multi-Modal Audience Vibe Modeling (Twitch Sentiment)](./tracks/track-17/index.md) - *Planned*
+- [Track 17: Multi-Modal Audience Vibe Modeling (Twitch Sentiment)](./tracks/track-17/index.md) - *Completed*
 - [Track 18: Stem-Aware Shader Visuals (Reactive Dashboard)](./tracks/track-18/index.md) - *Planned*

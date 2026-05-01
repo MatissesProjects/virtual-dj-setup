@@ -15,6 +15,7 @@ from brain.audio_classifier import AudioClassifier
 from brain.stem_separator import StemSeparator
 from brain.music_analyzer import MusicAnalyzer
 from brain.bridge_generator import BridgeGenerator
+from brain.audience_listener import AudienceListener
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -38,7 +39,8 @@ latest_data = {
     "vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], 
     "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5, 
     "classification": {"class": "Unknown", "confidence": 0},
-    "stems": {"vocal": 1.0, "drums": 1.0, "bass": 1.0, "other": 1.0}
+    "stems": {"vocal": 1.0, "drums": 1.0, "bass": 1.0, "other": 1.0},
+    "crowd": {"vibe": 0.0, "hype": 0.0, "status": "NEUTRAL"}
 }
 
 class StemsUpdate(BaseModel):
@@ -130,6 +132,8 @@ def main():
     classifier = AudioClassifier()
     
     bridge_gen = BridgeGenerator()
+    audience = AudienceListener() # Simulator mode by default
+    audience.run_in_thread()
 
     # Track 15: Stem Separation
     stem_worker = StemSeparator()
@@ -191,6 +195,7 @@ def main():
                 authority = "AI" if features['authority'] == 0 else "HUMAN"
                 
                 # Update latest data for WebSocket broadcast
+                latest_data["crowd"] = audience.get_vibe_report()
                 latest_data["rms"] = 20 * (features['rms'] + 0.000001)
                 latest_data["centroid"] = features['centroid']
                 latest_data["authority"] = authority
