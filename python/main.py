@@ -75,9 +75,12 @@ def main():
     analyzer = TrendAnalyzer(window_size=60)
     chord_predictor = ChordPredictor()
     clash_detector = ClashDetector()
-    spec_builder = SpectrogramBuilder()
+    spec_builders = {0: SpectrogramBuilder(), 1: SpectrogramBuilder()}
     classifier = AudioClassifier()
     logger = StateActionLogger()
+    
+    # Track latest classification per deck
+    deck_classifications = {0: {"class": "Unknown", "confidence": 0}, 1: {"class": "Unknown", "confidence": 0}}
     
     print("Waiting for C# engine...")
     while not reader.connect():
@@ -89,23 +92,33 @@ def main():
     inference_counter = 0
 
     try:
-        print("System Live! Chord Retrieval & CNN Analysis Active.")
+        print("System Live! Multi-Deck CNN Analysis Active.")
         while True:
             features = reader.read_features()
             if features:
+                deck_idx = features.get('song_index', 0) # This is now deck_index
+                
                 # Sync XFader from UI to C#
                 reader.write_xfader(latest_data["xfader"])
 
-                # Update Spectrogram & Run CNN Inference every 30 frames (~0.5s)
-                spec_builder.add_frame(features['fft'])
+                # Update Spectrogram for the specific deck
+                if deck_idx in spec_builders:
+                    spec_builders[deck_idx].add_frame(features['fft'])
+                
+                # Run CNN Inference every 30 frames
                 inference_counter += 1
                 if inference_counter >= 30:
                     inference_counter = 0
-                    cnn_input = spec_builder.get_cnn_input()
-                    latest_data["classification"] = classifier.predict(cnn_input)
+                    for idx, builder in spec_builders.items():
+                        cnn_input = builder.get_cnn_input()
+                        deck_classifications[idx] = classifier.predict(cnn_input)
+                    
+                    # For UI display, prioritize the one with higher confidence or active deck
+                    # For now, just show the one with highest vocal confidence or Deck A
+                    latest_data["classification"] = deck_classifications[0] 
 
-                # Update Playlist Context
-                if features['song_index'] != current_song_index:
+                # Update Playlist Context (Only if it's Deck A for simplicity)
+                if deck_idx == 0 and features['song_index'] != current_song_index:
                     current_song_index = features['song_index']
                     if 0 <= current_song_index < len(PLAYLIST):
                         song = PLAYLIST[current_song_index]

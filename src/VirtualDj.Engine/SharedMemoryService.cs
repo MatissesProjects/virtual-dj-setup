@@ -46,34 +46,36 @@ namespace VirtualDj.Engine
             return _accessor.ReadSingle(StateOffset + 24);
         }
 
-        public void WriteFeatureFrame(FeatureFrame frame, int songIndex, float[] fftMagnitudes)
+        private readonly object _writeLock = new object();
+
+        public void WriteFeatureFrame(FeatureFrame frame, int deckIndex, float[] fftMagnitudes)
         {
-            // 1. Determine which slot to write to (next available)
-            int currentWritePtr = _accessor.ReadInt32(StateOffset);
-            int nextSlot = (currentWritePtr + 1) % BufferSlots;
-            int offset = SlotsOffset + (nextSlot * SlotSize);
-
-            // 2. Write Data to the *next* slot (safe, Python is reading from currentWritePtr)
-            _accessor.Write(offset + 0, ++_sequenceNumber);
-            _accessor.Write(offset + 4, frame.Rms);
-            _accessor.Write(offset + 8, frame.SpectralCentroid);
-            _accessor.Write(offset + 12, frame.PeakFrequency);
-            _accessor.Write(offset + 16, (int)frame.Authority);
-            _accessor.Write(offset + 20, songIndex);
-            _accessor.Write(offset + 24, frame.Timestamp.ToBinary());
-            _accessor.Write(offset + 32, 0); // IsPeak placeholder
-            
-            // Write FFT Array
-            if (fftMagnitudes != null && fftMagnitudes.Length >= FFTBinCount)
+            lock (_writeLock)
             {
-                _accessor.WriteArray(offset + 64, fftMagnitudes, 0, FFTBinCount); // Aligned to 64 within slot
-            }
+                // 1. Determine which slot to write to (next available)
+                int currentWritePtr = _accessor.ReadInt32(StateOffset);
+                int nextSlot = (currentWritePtr + 1) % BufferSlots;
+                int offset = SlotsOffset + (nextSlot * SlotSize);
 
-            // 3. Commit the write by atomically updating the WritePointer
-            // Using Interlocked on the accessor's underlying safe memory mapped handle is tricky,
-            // but for SPSC (Single Producer Single Consumer), a simple write is usually sufficient 
-            // if we assume x86 strong memory model. For true lock-free, we just write it last.
-            _accessor.Write(StateOffset, nextSlot); 
+                // 2. Write Data to the *next* slot
+                _accessor.Write(offset + 0, ++_sequenceNumber);
+                _accessor.Write(offset + 4, frame.Rms);
+                _accessor.Write(offset + 8, frame.SpectralCentroid);
+                _accessor.Write(offset + 12, frame.PeakFrequency);
+                _accessor.Write(offset + 16, (int)frame.Authority);
+                _accessor.Write(offset + 20, deckIndex); // Used as Deck Index
+                _accessor.Write(offset + 24, frame.Timestamp.ToBinary());
+                _accessor.Write(offset + 32, 0); // IsPeak placeholder
+                
+                // Write FFT Array
+                if (fftMagnitudes != null && fftMagnitudes.Length >= FFTBinCount)
+                {
+                    _accessor.WriteArray(offset + 64, fftMagnitudes, 0, FFTBinCount);
+                }
+
+                // 3. Commit the write
+                _accessor.Write(StateOffset, nextSlot); 
+            }
         }
 
         // Gym Synchronization Methods

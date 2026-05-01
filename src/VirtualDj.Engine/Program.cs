@@ -43,25 +43,28 @@ namespace VirtualDj.Engine
 
             deckA.Pipeline.FeaturesCalculated += (s, frame) =>
             {
-                // 1. Write to Shared Memory for Python (passing current song index and full FFT)
+                // Write Deck A features (Index 0)
                 sharedMemoryService.WriteFeatureFrame(frame, 0, frame.MagnitudeSpectrum ?? Array.Empty<float>());
                 sharedMemoryService.WriteCrossfaderPosition(masterMixer.Crossfader.Position);
 
-                // 2. Read Ducking Commands from Python (Bi-directional MMF)
+                // ... (existing logic)
                 var (freq, gain) = sharedMemoryService.ReadDuckingParams();
                 if (freq > 0)
                 {
                     deckA.Pipeline.SetDucking(freq, gain);
                 }
-
-                // 3. Read Crossfader from Python (AI/UI control)
                 masterMixer.Crossfader.Position = sharedMemoryService.ReadCrossfaderPosition();
 
-                // 4. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
                 var song = playlistManager.CurrentSong;
                 Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | X-Fader: {masterMixer.Crossfader.Position:F2} | Auth: {frame.Authority}    ");
+            };
+
+            deckB.Pipeline.FeaturesCalculated += (s, frame) =>
+            {
+                // Write Deck B features (Index 1)
+                sharedMemoryService.WriteFeatureFrame(frame, 1, frame.MagnitudeSpectrum ?? Array.Empty<float>());
             };
 
             captureService.DataAvailable += (s, e) =>

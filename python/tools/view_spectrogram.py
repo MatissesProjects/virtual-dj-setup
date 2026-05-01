@@ -11,26 +11,30 @@ from ipc.shared_memory import SharedMemoryReader
 from brain.spectrogram_builder import SpectrogramBuilder
 
 def main():
-    print("Starting Spectrogram Viewer...")
+    print("Starting Multi-Deck Spectrogram Viewer...")
     reader = SharedMemoryReader()
     if not reader.connect():
         print("Failed to connect to shared memory. Is the C# engine running?")
         return
 
-    builder = SpectrogramBuilder(history_length=128)
+    # One builder per deck
+    builders = {0: SpectrogramBuilder(history_length=128), 1: SpectrogramBuilder(history_length=128)}
     
-    # Set up plotting
+    # Set up plotting with two subplots
     plt.ion()
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10))
     
-    # We transpose to have frequency on Y axis and time on X axis
-    spec = builder.get_normalized_spectrogram().T
-    im = ax.imshow(spec, aspect='auto', origin='lower', cmap='magma', vmin=0, vmax=1)
+    spec_a = builders[0].get_normalized_spectrogram().T
+    im1 = ax1.imshow(spec_a, aspect='auto', origin='lower', cmap='magma', vmin=0, vmax=1)
+    ax1.set_title("Deck A Spectrogram")
     
-    ax.set_title("Real-time Spectrogram (1024 Bins)")
-    ax.set_ylabel("Frequency Bin")
-    ax.set_xlabel("Time (Frames)")
-    plt.colorbar(im, label="Normalized Magnitude (Log Scale)")
+    spec_b = builders[1].get_normalized_spectrogram().T
+    im2 = ax2.imshow(spec_b, aspect='auto', origin='lower', cmap='viridis', vmin=0, vmax=1)
+    ax2.set_title("Deck B Spectrogram")
+    
+    for ax in [ax1, ax2]:
+        ax.set_ylabel("Frequency Bin")
+        ax.set_xlabel("Time (Frames)")
 
     last_update = time.time()
     
@@ -38,11 +42,14 @@ def main():
         while True:
             features = reader.read_features()
             if features:
-                builder.add_frame(features['fft'])
+                deck_idx = features.get('song_index', 0)
+                if deck_idx in builders:
+                    builders[deck_idx].add_frame(features['fft'])
                 
-                # Update plot at ~20Hz to save CPU
+                # Update plot at ~20Hz
                 if time.time() - last_update > 0.05:
-                    im.set_data(builder.get_normalized_spectrogram().T)
+                    im1.set_data(builders[0].get_normalized_spectrogram().T)
+                    im2.set_data(builders[1].get_normalized_spectrogram().T)
                     fig.canvas.draw()
                     fig.canvas.flush_events()
                     last_update = time.time()

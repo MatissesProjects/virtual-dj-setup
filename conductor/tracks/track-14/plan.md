@@ -15,5 +15,5 @@
 ## Phase 3: Real-time Integration
 - [x] Hook `audio_classifier.py` into the main `python/main.py` loop.
 - [x] Add CNN classification display to the Vue UI dashboard.
-- [ ] Update `SharedMemoryReader` if additional metadata is needed.
-- [x] Test real-time classification on various audio tracks. (System integrated)
+- [x] Update `SharedMemoryReader` / Engine to support multi-deck feature streaming.
+- [x] Test real-time classification on various audio tracks. (System integrated and multi-deck verified)
