@@ -8,6 +8,7 @@ from ipc.shared_memory import SharedMemoryReader
 from ipc.intent_emitter import IntentEmitter, IntentType
 from brain.trend_analyzer import TrendAnalyzer
 from brain.chord_predictor import ChordPredictor
+from brain.clash_detector import ClashDetector
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -27,7 +28,7 @@ app.add_middleware(
 )
 
 connected_websockets = set()
-latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": []}
+latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -65,6 +66,7 @@ def main():
     emitter = IntentEmitter()
     analyzer = TrendAnalyzer(window_size=60)
     chord_predictor = ChordPredictor()
+    clash_detector = ClashDetector()
     logger = StateActionLogger()
     
     print("Waiting for C# engine...")
@@ -76,7 +78,7 @@ def main():
     current_chords = []
 
     try:
-        print("System Live! Chord Retrieval & Predictive Mixing Active.")
+        print("System Live! Chord Retrieval & Semantic Ducking Active.")
         while True:
             features = reader.read_features()
             if features:
@@ -91,6 +93,18 @@ def main():
 
                 authority = "AI" if features['authority'] == 0 else "HUMAN"
                 
+                # SEMANTIC DUCKING: 
+                # Simulate a clash if energy is high. Find the peak frequency.
+                if features['rms'] > 0.05:
+                    # Find strongest freq in current stream
+                    peak_freq = features['peak']
+                    # Apply a surgical dip at that frequency to "carve space" (Self-ducking demo)
+                    reader.write_ducking(peak_freq, -6.0) # 6dB dip
+                    latest_data["ducking"] = {"freq": peak_freq, "gain": -6.0}
+                else:
+                    reader.write_ducking(0, 0)
+                    latest_data["ducking"] = {"freq": 0, "gain": 0}
+
                 # Update latest data for WebSocket broadcast
                 latest_data["rms"] = 20 * (features['rms'] + 0.000001)
                 latest_data["centroid"] = features['centroid']
@@ -118,7 +132,7 @@ def main():
                             emitter.emit(IntentType.EXECUTE_DROP)
                             current_intent = IntentType.IDLE
 
-                    print(f"\rVibe: {current_intent.name: <15} | FFT Max: {max_fft:.2f} | Chords: {str(current_chords)[:15]}...    ", end="")
+                    print(f"\rVibe: {current_intent.name: <15} | FFT Max: {max_fft:.2f} | Ducking: {latest_data['ducking']['freq']:.0f}Hz    ", end="")
             
             time.sleep(0.05)
     except KeyboardInterrupt:

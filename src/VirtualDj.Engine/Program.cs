@@ -12,14 +12,14 @@ namespace VirtualDj.Engine
             using var captureService = new WasapiCaptureService();
             using var sharedMemoryService = new SharedMemoryService();
             using var intentListener = new IntentListener();
-            var dspPipeline = new DspPipeline(2048);
-            var intentExecutor = new IntentExecutor(dspPipeline);
-            using var midiService = new MidiService(dspPipeline);
+            
+            // Track 11: Multi-Deck Support
+            using var deckA = new VirtualDeck("Deck A", captureService.WaveFormat);
+            // using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat); // Ready for future
+            
+            var intentExecutor = new IntentExecutor(deckA.Pipeline);
+            using var midiService = new MidiService(deckA.Pipeline);
             var playlistManager = new PlaylistManager();
-
-            // Buffering for Track 10
-            var audioBuffer = new CircularAudioBuffer(44100 * 10); // 10 seconds at 44.1k
-            using var playbackService = new DeckPlaybackService(audioBuffer, captureService.WaveFormat);
 
             // Mock Playlist
             playlistManager.AddSong("Get Lucky", "Daft Punk");
@@ -33,16 +33,23 @@ namespace VirtualDj.Engine
                 intentExecutor.Execute(intent);
             };
 
-            dspPipeline.FeaturesCalculated += (s, frame) =>
+            deckA.Pipeline.FeaturesCalculated += (s, frame) =>
             {
                 // 1. Write to Shared Memory for Python (passing current song index and full FFT)
                 sharedMemoryService.WriteFeatureFrame(frame, 0, frame.MagnitudeSpectrum ?? Array.Empty<float>());
 
-                // 2. Local Debug Output
+                // 2. Read Ducking Commands from Python (Bi-directional MMF)
+                var (freq, gain) = sharedMemoryService.ReadDuckingParams();
+                if (freq > 0)
+                {
+                    deckA.Pipeline.SetDucking(freq, gain);
+                }
+
+                // 3. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
                 var song = playlistManager.CurrentSong;
-                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Tempo: {playbackService.Tempo:F2}x | Auth: {frame.Authority}    ");
+                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Tempo: {deckA.Playback.Tempo:F2}x | Auth: {frame.Authority}    ");
             };
 
             captureService.DataAvailable += (s, e) =>
@@ -58,15 +65,13 @@ namespace VirtualDj.Engine
                     floatBuffer[i] = waveBuffer.FloatBuffer[i];
                 }
 
-                // Write to Circular Buffer for Playback manipulation
-                audioBuffer.Write(floatBuffer, sampleCount);
-
-                dspPipeline.ProcessSamples(floatBuffer, sampleCount, captureService.WaveFormat);
+                // Process through Deck A
+                deckA.Process(floatBuffer, sampleCount, captureService.WaveFormat);
             };
 
             intentListener.Start();
             midiService.Start();
-            playbackService.Start();
+            deckA.Playback.Start();
             captureService.Start();
 
             Console.WriteLine("Press any key to stop... (Press 'M' for Manual, 'T' to increase Tempo)");
@@ -78,11 +83,11 @@ namespace VirtualDj.Engine
                     var key = Console.ReadKey(true).Key;
                     if (key == ConsoleKey.M)
                     {
-                        dspPipeline.ForceManualOverride();
+                        deckA.Pipeline.ForceManualOverride();
                     }
                     else if (key == ConsoleKey.T)
                     {
-                        playbackService.Tempo += 0.05f;
+                        deckA.Playback.Tempo += 0.05f;
                     }
                     else
                     {
@@ -93,7 +98,7 @@ namespace VirtualDj.Engine
             }
 
             captureService.Stop();
-            playbackService.Stop();
+            deckA.Dispose();
             midiService.Stop();
             intentListener.Stop();
         }

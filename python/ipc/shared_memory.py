@@ -26,17 +26,18 @@ class SharedMemoryReader:
         
         self.mm.seek(0)
         
-        # Read Header (40 bytes)
-        header_data = self.mm.read(40)
+        # Read Header (Expanded to 64 bytes for growth)
+        header_data = self.mm.read(64)
         try:
-            # i: seq, i: lock, f: rms, f: centroid, f: peak, i: auth, i: song, q: ticks, i: peak_flag
-            seq, lock, rms, centroid, peak, auth, song, ticks, peak_flag = struct.unpack('i i fff i i q i', header_data)
+            # i: seq, i: lock, f: rms, f: centroid, f: peak, i: auth, i: song, q: ticks, i: peak_flag, f: duck_f, f: duck_g
+            res = struct.unpack('ii fff ii q i ff', header_data[:52])
+            seq, lock, rms, centroid, peak, auth, song, ticks, peak_flag, duck_f, duck_g = res
             
-            # If C# is currently writing, skip this frame to prevent tearing
             if lock == 1:
                 return None
 
-            # Read FFT Data (1024 floats = 4096 bytes)
+            # Read FFT Data (Starts at offset 64)
+            self.mm.seek(64)
             fft_data = self.mm.read(self.fft_bin_count * 4)
             fft_array = struct.unpack(f'{self.fft_bin_count}f', fft_data)
 
@@ -53,6 +54,14 @@ class SharedMemoryReader:
             }
         except struct.error:
             return None
+
+    def write_ducking(self, frequency, gain_db):
+        if not self.mm:
+            return
+        
+        # Ducking frequency at offset 40, gain at 44
+        self.mm.seek(40)
+        self.mm.write(struct.pack('ff', float(frequency), float(gain_db)))
 
     def close(self):
         if self.mm:

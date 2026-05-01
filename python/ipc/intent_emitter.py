@@ -8,6 +8,7 @@ class IntentType(IntEnum):
     EXECUTE_DROP = 2
     SMOOTH_BLEND = 3
     CLEAN_CUT = 4
+    APPLY_DUCKING = 5
 
 class IntentEmitter:
     def __init__(self, host='127.0.0.1', port=5555):

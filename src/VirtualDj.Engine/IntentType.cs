@@ -6,6 +6,7 @@ namespace VirtualDj.Engine
         CreateTension = 1,
         ExecuteDrop = 2,
         SmoothBlend = 3,
-        CleanCut = 4
+        CleanCut = 4,
+        ApplyDucking = 5
     }
 }

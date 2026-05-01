@@ -26,6 +26,11 @@
                 <div class="label">Current AI Intent</div>
                 <div class="vibe-name">{{ vibe }}</div>
                 <div class="label">Authority: <span :style="{color: authority === 'HUMAN' ? '#cf6679' : '#03dac6'}">{{ authority }}</span></div>
+                
+                <div v-if="duckingFreq > 0" style="margin-top: 15px; padding: 10px; background: rgba(3, 218, 198, 0.1); border-radius: 4px;">
+                    <div class="label" style="color: #03dac6;">AI Dynamic EQ Active</div>
+                    <div style="font-weight: bold;">Ducking Clash @ {{ duckingFreq }} Hz</div>
+                </div>
             </div>
             <div class="card">
                 <div class="label">Master RMS</div>
@@ -57,6 +62,7 @@
                 const rmsPercent = ref(0)
                 const centroid = ref(0)
                 const chords = ref([])
+                const duckingFreq = ref(0)
                 let ws = null
 
                 const connect = () => {
@@ -68,6 +74,7 @@
                         rmsPercent.value = Math.min(100, Math.max(0, (data.rms + 60) / 60 * 100))
                         centroid.value = Math.round(data.centroid)
                         chords.value = data.chords || []
+                        duckingFreq.value = data.ducking ? Math.round(data.ducking.freq) : 0
                     }
                     ws.onclose = () => setTimeout(connect, 1000)
                 }
@@ -83,7 +90,7 @@
                     fetch('http://localhost:8000/yield', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, takeover, yieldToAi }
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, takeover, yieldToAi }
             }
         }).mount('#app')
     </script>

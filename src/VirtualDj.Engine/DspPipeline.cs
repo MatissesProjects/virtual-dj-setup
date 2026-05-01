@@ -17,10 +17,17 @@ namespace VirtualDj.Engine
         private readonly LimiterNode _limiter = new LimiterNode();
         private readonly StereoWidthNode _widthNode = new StereoWidthNode();
         private readonly SplineInterpolator _widthInterpolator = new SplineInterpolator();
+        private readonly DynamicEqNode _dynamicEq = new DynamicEqNode();
 
         private ControlAuthority _authority = ControlAuthority.Ai;
         private DateTime _lastManualChange = DateTime.MinValue;
         private readonly TimeSpan _manualOverrideTimeout = TimeSpan.FromSeconds(5);
+
+        public void SetDucking(float frequency, float gainDb)
+        {
+            _dynamicEq.Frequency = frequency;
+            _dynamicEq.GainDb = gainDb;
+        }
 
         public ControlAuthority Authority
         {
@@ -89,6 +96,9 @@ namespace VirtualDj.Engine
 
         public void ProcessSamples(float[] samples, int count, WaveFormat format)
         {
+            _dynamicEq.Initialize(format.SampleRate);
+            _dynamicEq.Process(samples, count);
+
             // Update interpolators sample-by-sample
             if (_widthInterpolator.IsActive)
             {

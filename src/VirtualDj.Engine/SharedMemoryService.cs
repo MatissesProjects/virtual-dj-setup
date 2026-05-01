@@ -6,8 +6,7 @@ namespace VirtualDj.Engine
     {
         private const string MapName = "VirtualDjFeatures";
         private const int FFTBinCount = 1024;
-        // Header (40 bytes) + FFT Data (1024 * 4 bytes)
-        private const int BufferSize = 40 + (FFTBinCount * 4); 
+        private const int BufferSize = 64 + (FFTBinCount * 4); // Expanded for future growth
         
         private readonly MemoryMappedFile _mmf;
         private readonly MemoryMappedViewAccessor _accessor;
@@ -32,16 +31,31 @@ namespace VirtualDj.Engine
             _accessor.Write(20, (int)frame.Authority);
             _accessor.Write(24, songIndex);
             _accessor.Write(28, frame.Timestamp.ToBinary());
-            _accessor.Write(36, 0); // IsPeak placeholder for now
+            _accessor.Write(36, 0); // IsPeak placeholder
+            _accessor.Write(40, 0f); // Ducking Frequency (Read from here)
+            _accessor.Write(44, 0f); // Ducking Gain (Read from here)
             
             // Write FFT Array
             if (fftMagnitudes != null && fftMagnitudes.Length >= FFTBinCount)
             {
-                _accessor.WriteArray(40, fftMagnitudes, 0, FFTBinCount);
+                _accessor.WriteArray(48, fftMagnitudes, 0, FFTBinCount);
             }
 
             // 3. Release Lock Byte
             _accessor.Write(4, 0); 
+        }
+
+        public void UpdateDuckingParams(float freq, float gain)
+        {
+            _accessor.Write(40, freq);
+            _accessor.Write(44, gain);
+        }
+
+        public (float freq, float gain) ReadDuckingParams()
+        {
+            float freq = _accessor.ReadSingle(40);
+            float gain = _accessor.ReadSingle(44);
+            return (freq, gain);
         }
 
         public void Dispose()
