@@ -90,6 +90,13 @@ class SharedMemoryReader:
         self.mm.seek(self.state_offset + 16)
         self.mm.write(struct.pack('ff', float(frequency), float(gain_db)))
 
+    def write_stem_volumes(self, vocal_vol, drums_vol, bass_vol, other_vol):
+        if not self.mm:
+            return
+        # Storing at offset 28, 32, 36, 40 (inside the 64-byte State Header)
+        self.mm.seek(self.state_offset + 28)
+        self.mm.write(struct.pack('ffff', float(vocal_vol), float(drums_vol), float(bass_vol), float(other_vol)))
+
     # Gym Synchronization Methods
     def write_step_command(self, step_size):
         if not self.mm:

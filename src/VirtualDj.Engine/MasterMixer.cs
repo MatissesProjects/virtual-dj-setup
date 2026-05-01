@@ -45,6 +45,9 @@ namespace VirtualDj.Engine
         private readonly float[] _stemBass = new float[2048];
         private readonly float[] _stemOther = new float[2048];
 
+        public (float Vocal, float Drums, float Bass, float Other) StemVolumes { get; set; } = (1.0f, 1.0f, 1.0f, 1.0f);
+        public bool StemsActive { get; set; } = true; // Assume active for Track 15 prototype
+
         public int Read(byte[] buffer, int offset, int count)
         {
             int samplesRequired = count / 4;
@@ -73,6 +76,27 @@ namespace VirtualDj.Engine
                 _audioBridge.ReadStem(2, _stemDrums, samplesRequired);
                 _audioBridge.ReadStem(3, _stemBass, samplesRequired);
                 _audioBridge.ReadStem(4, _stemOther, samplesRequired);
+            }
+
+            // Optional: Reconstruct Deck A from stems if Stem separation is active and modifying volumes
+            if (StemsActive)
+            {
+                for (int i = 0; i < samplesRequired; i++)
+                {
+                    // If stems are empty (Python not running), this will mute Deck A.
+                    // A real app would fallback to original bufferA if stems are empty.
+                    float reconstructed = 
+                        (_stemVocal[i] * StemVolumes.Vocal) + 
+                        (_stemDrums[i] * StemVolumes.Drums) + 
+                        (_stemBass[i] * StemVolumes.Bass) + 
+                        (_stemOther[i] * StemVolumes.Other);
+                    
+                    // Simple fallback: if all stems are exactly 0, keep original bufferA
+                    if (_stemVocal[i] == 0 && _stemDrums[i] == 0 && _stemBass[i] == 0 && _stemOther[i] == 0)
+                        continue; 
+
+                    bufferA[i] = reconstructed;
+                }
             }
 
             // 3. Mix through crossfader

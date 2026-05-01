@@ -13,6 +13,15 @@ class StemSeparator:
     def __init__(self, model_name="MDX_Net_UMX_HQ"): # Fast, reliable UMX model
         print(f"[STEM] Initializing Separator with model: {model_name}...")
         self.separator = Separator()
+        # Optimize for CPU/GPU depending on availability
+        import torch
+        if torch.cuda.is_available():
+            print("[STEM] CUDA detected. Using CUDAExecutionProvider for ONNX.")
+            self.separator.onnx_execution_provider = "CUDAExecutionProvider"
+        else:
+            print("[STEM] CUDA not detected. Using CPUExecutionProvider.")
+            self.separator.onnx_execution_provider = "CPUExecutionProvider"
+            
         self.model_name = model_name
         
         # In a real 2025 scenario, we'd use a causal, streaming-optimized model.

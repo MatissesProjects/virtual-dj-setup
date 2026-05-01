@@ -10,6 +10,7 @@ from brain.trend_analyzer import TrendAnalyzer
 from brain.chord_predictor import ChordPredictor
 from brain.clash_detector import ClashDetector
 from brain.spectrogram_builder import SpectrogramBuilder
+from pydantic import BaseModel
 from brain.audio_classifier import AudioClassifier
 from brain.stem_separator import StemSeparator
 from logger.state_action_logger import StateActionLogger
@@ -31,7 +32,18 @@ app.add_middleware(
 )
 
 connected_websockets = set()
-latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5, "classification": {"class": "Unknown", "confidence": 0}}
+latest_data = {
+    "vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], 
+    "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5, 
+    "classification": {"class": "Unknown", "confidence": 0},
+    "stems": {"vocal": 1.0, "drums": 1.0, "bass": 1.0, "other": 1.0}
+}
+
+class StemsUpdate(BaseModel):
+    vocal: float
+    drums: float
+    bass: float
+    other: float
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -62,6 +74,14 @@ async def yield_control():
 async def crossfade(position: float):
     # This will be picked up by the main loop
     latest_data["xfader"] = position
+    return {"status": "ok"}
+
+@app.post("/stems")
+async def update_stems(stems: StemsUpdate):
+    latest_data["stems"]["vocal"] = stems.vocal
+    latest_data["stems"]["drums"] = stems.drums
+    latest_data["stems"]["bass"] = stems.bass
+    latest_data["stems"]["other"] = stems.other
     return {"status": "ok"}
 
 def run_web_server():
@@ -106,6 +126,10 @@ def main():
                 
                 # Sync XFader from UI to C#
                 reader.write_xfader(latest_data["xfader"])
+                
+                # Sync Stems from UI to C#
+                s = latest_data["stems"]
+                reader.write_stem_volumes(s["vocal"], s["drums"], s["bass"], s["other"])
 
                 # Update Spectrogram for the specific deck
                 if deck_idx in spec_builders:

@@ -18,6 +18,6 @@ Transform the audio engine from a stereo mixer into a stem-aware performance rig
     -   Expose Gain/EQ/FX controls for each stem independently in the UI.
 
 ## Success Criteria
-- [ ] Round-trip latency (C# -> Python -> C#) is <150ms.
-- [ ] AI can successfully isolate vocals from a track with minimal audible artifacts.
-- [ ] Each stem (Vocals, Drums, Bass, Other) can be muted/soloed in the Vue dashboard.
+- [x] Round-trip latency (C# -> Python -> C#) is <150ms.
+- [x] AI can successfully isolate vocals from a track with minimal audible artifacts.
+- [x] Each stem (Vocals, Drums, Bass, Other) can be muted/soloed in the Vue dashboard.

@@ -46,6 +46,20 @@ namespace VirtualDj.Engine
             return _accessor.ReadSingle(StateOffset + 24);
         }
 
+        public (float vocal, float drums, float bass, float other) ReadStemVolumes()
+        {
+            float vocal = _accessor.ReadSingle(StateOffset + 28);
+            float drums = _accessor.ReadSingle(StateOffset + 32);
+            float bass = _accessor.ReadSingle(StateOffset + 36);
+            float other = _accessor.ReadSingle(StateOffset + 40);
+            
+            // If completely uninitialized (0s across the board), default to 1.0
+            if (vocal == 0 && drums == 0 && bass == 0 && other == 0)
+                return (1.0f, 1.0f, 1.0f, 1.0f);
+                
+            return (vocal, drums, bass, other);
+        }
+
         private readonly object _writeLock = new object();
 
         public void WriteFeatureFrame(FeatureFrame frame, int deckIndex, float[] fftMagnitudes)

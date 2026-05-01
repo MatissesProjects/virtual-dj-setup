@@ -56,10 +56,33 @@
             <button @click="yieldToAi" style="background: #03dac6;">Yield to AI</button>
         </div>
 
-        <div class="card" style="margin-top: 20px;">
-            <div class="label">Crossfader: Deck A <---> Deck B</div>
-            <input type="range" min="0" max="1" step="0.01" v-model="xfader" @input="updateXFader" style="width: 100%; margin-top: 10px;">
-            <div style="text-align: center; font-weight: bold; margin-top: 5px;">{{ xfader }}</div>
+        <div style="display: flex; gap: 20px; margin-top: 20px;">
+            <div class="card" style="flex: 1;">
+                <div class="label">Crossfader: Deck A <---> Deck B</div>
+                <input type="range" min="0" max="1" step="0.01" v-model="xfader" @input="updateXFader" style="width: 100%; margin-top: 10px;">
+                <div style="text-align: center; font-weight: bold; margin-top: 5px;">{{ xfader }}</div>
+            </div>
+            <div class="card" style="flex: 1;">
+                <div class="label">Deck A Stem Levels</div>
+                <div style="display: flex; justify-content: space-around; margin-top: 10px;">
+                    <div style="text-align: center;">
+                        <div>Voc</div>
+                        <input type="range" min="0" max="1" step="0.01" v-model="stems.vocal" @input="updateStems" orient="vertical" style="-webkit-appearance: slider-vertical; height: 80px; width: 20px;">
+                    </div>
+                    <div style="text-align: center;">
+                        <div>Drm</div>
+                        <input type="range" min="0" max="1" step="0.01" v-model="stems.drums" @input="updateStems" orient="vertical" style="-webkit-appearance: slider-vertical; height: 80px; width: 20px;">
+                    </div>
+                    <div style="text-align: center;">
+                        <div>Bss</div>
+                        <input type="range" min="0" max="1" step="0.01" v-model="stems.bass" @input="updateStems" orient="vertical" style="-webkit-appearance: slider-vertical; height: 80px; width: 20px;">
+                    </div>
+                    <div style="text-align: center;">
+                        <div>Oth</div>
+                        <input type="range" min="0" max="1" step="0.01" v-model="stems.other" @input="updateStems" orient="vertical" style="-webkit-appearance: slider-vertical; height: 80px; width: 20px;">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -76,6 +99,7 @@
                 const duckingFreq = ref(0)
                 const xfader = ref(0.5)
                 const classification = ref({ class: 'Unknown', confidence: 0 })
+                const stems = ref({ vocal: 1.0, drums: 1.0, bass: 1.0, other: 1.0 })
                 let ws = null
 
                 const connect = () => {
@@ -104,6 +128,19 @@
                     fetch(`http://localhost:8000/crossfade?position=${xfader.value}`, { method: 'POST' })
                 }
 
+                const updateStems = () => {
+                    fetch(`http://localhost:8000/stems`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            vocal: parseFloat(stems.value.vocal),
+                            drums: parseFloat(stems.value.drums),
+                            bass: parseFloat(stems.value.bass),
+                            other: parseFloat(stems.value.other)
+                        })
+                    })
+                }
+
                 const takeover = () => {
                     // Send command to python which sends to C#
                     fetch('http://localhost:8000/takeover', { method: 'POST' })
@@ -113,7 +150,7 @@
                     fetch('http://localhost:8000/yield', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, updateXFader, takeover, yieldToAi }
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, updateXFader, updateStems, takeover, yieldToAi }
             }
         }).mount('#app')
     </script>

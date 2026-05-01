@@ -68,6 +68,9 @@ namespace VirtualDj.Engine
                 }
                 masterMixer.Crossfader.Position = sharedMemoryService.ReadCrossfaderPosition();
 
+                // 4. Read Stem Volumes from Python (AI/UI control)
+                masterMixer.StemVolumes = sharedMemoryService.ReadStemVolumes();
+
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
                 var song = playlistManager.CurrentSong;
