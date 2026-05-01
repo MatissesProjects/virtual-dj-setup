@@ -22,6 +22,7 @@ class AudioCNN(nn.Module):
         
         # Global Average Pooling to make it input-size invariant
         self.gap = nn.AdaptiveAvgPool2d((1, 1))
+        self.dropout = nn.Dropout(0.3)
         self.fc = nn.Linear(64, num_classes)
 
     def forward(self, x):
@@ -30,7 +31,7 @@ class AudioCNN(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.gap(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
+        x = self.fc(self.dropout(x))
         return x
 
 class AudioClassifier:

@@ -6,12 +6,14 @@
 - [x] Add visualization script `python/tools/view_spectrogram.py` to verify data integrity.
 
 ## Phase 2: CNN Model Implementation
-- [ ] Design a simple 3-layer CNN architecture optimized for 1D/2D audio features.
+- [x] Design a simple 3-layer CNN architecture optimized for 1D/2D audio features.
+- [x] Integrate the model into `python/brain/audio_classifier.py`. (Added Dropout for generalization)
+- [x] Implement training infrastructure (`train_audio_cnn.py`) with support for synthetic and real data.
+- [x] Create data collection utility (`collect_data.py`) to gather real labeled samples.
 - [ ] (Optional) Load a pre-trained "Stem Detection" or "Vocal Detection" model.
-- [x] Integrate the model into `python/brain/audio_classifier.py`. (Architecture implemented, needs training)
 
 ## Phase 3: Real-time Integration
 - [x] Hook `audio_classifier.py` into the main `python/main.py` loop.
+- [x] Add CNN classification display to the Vue UI dashboard.
 - [ ] Update `SharedMemoryReader` if additional metadata is needed.
 - [x] Test real-time classification on various audio tracks. (System integrated)
-- [x] Add CNN classification display to the Vue UI dashboard.
