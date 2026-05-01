@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace VirtualDj.Engine
 {
-    public class DeckPlaybackService : IWaveProvider
+    public class DeckPlaybackService : IWaveProvider, IDisposable
     {
         private readonly CircularAudioBuffer _buffer;
         private readonly WaveFormat _format;
@@ -49,5 +49,11 @@ namespace VirtualDj.Engine
         }
 
         public WaveFormat WaveFormat => _format;
+
+        public void Dispose()
+        {
+            _output.Stop();
+            _output.Dispose();
+        }
     }
 }
