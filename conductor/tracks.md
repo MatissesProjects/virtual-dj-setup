@@ -1,7 +1,7 @@
 # Tracks Registry
 
 ## Active Tracks
-- [Track 11: Semantic Audio Ducking (Dynamic Masking)](./tracks/track-11/index.md) - *In Progress*
+- [Track 12: The Hyperbolic Time Chamber (Simulation Gym)](./tracks/track-12/index.md) - *In Progress*
 
 ## Backlog
 - [Track 1: Project Scaffolding & MVP Audio Capture](./tracks/track-1/index.md) - *Completed*
@@ -14,4 +14,4 @@
 - [Track 8: Chord Retrieval & Playlist Management](./tracks/track-8/index.md) - *Completed*
 - [Track 9: The MMF Power Move & Neural Bridge](./tracks/track-9/index.md) - *Completed*
 - [Track 10: Virtual Decks & Time-Stretching](./tracks/track-10/index.md) - *Completed*
-- [Track 12: The Hyperbolic Time Chamber (Simulation Gym)](./tracks/track-12/index.md) - *Pending*
+- [Track 11: Semantic Audio Ducking (Dynamic Masking)](./tracks/track-11/index.md) - *Completed*
