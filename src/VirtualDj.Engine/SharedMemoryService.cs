@@ -38,11 +38,29 @@ namespace VirtualDj.Engine
             // Write FFT Array
             if (fftMagnitudes != null && fftMagnitudes.Length >= FFTBinCount)
             {
-                _accessor.WriteArray(48, fftMagnitudes, 0, FFTBinCount);
+                _accessor.WriteArray(64, fftMagnitudes, 0, FFTBinCount); // Aligned to 64
             }
 
             // 3. Release Lock Byte
             _accessor.Write(4, 0); 
+        }
+
+        // Gym Synchronization Methods
+        public void WriteIsDone(bool isDone)
+        {
+            _accessor.Write(56, isDone ? 1 : 0);
+        }
+
+        public (int command, int size) ReadStepCommand()
+        {
+            int command = _accessor.ReadInt32(48);
+            int size = _accessor.ReadInt32(52);
+            return (command, size);
+        }
+
+        public void ClearStepCommand()
+        {
+            _accessor.Write(48, 0);
         }
 
         public void UpdateDuckingParams(float freq, float gain)

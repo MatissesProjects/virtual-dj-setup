@@ -63,6 +63,28 @@ class SharedMemoryReader:
         self.mm.seek(40)
         self.mm.write(struct.pack('ff', float(frequency), float(gain_db)))
 
+    # Gym Synchronization Methods
+    def write_step_command(self, step_size):
+        if not self.mm:
+            return
+        # command=1 at offset 48, step_size at 52
+        self.mm.seek(48)
+        self.mm.write(struct.pack('ii', 1, int(step_size)))
+
+    def is_step_completed(self):
+        if not self.mm:
+            return True
+        self.mm.seek(48)
+        command = struct.unpack('i', self.mm.read(4))[0]
+        return command == 0
+
+    def read_is_done(self):
+        if not self.mm:
+            return True
+        self.mm.seek(56)
+        is_done = struct.unpack('i', self.mm.read(4))[0]
+        return is_done == 1
+
     def close(self):
         if self.mm:
             self.mm.close()

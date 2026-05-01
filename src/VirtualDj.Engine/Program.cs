@@ -7,7 +7,14 @@ namespace VirtualDj.Engine
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Virtual DJ Engine starting...");
+            if (args.Length >= 2 && args[0] == "--headless")
+            {
+                var host = new HeadlessHost(args[1]);
+                host.Run();
+                return;
+            }
+
+            Console.WriteLine("Virtual DJ Engine starting (Live Mode)...");
 
             using var captureService = new WasapiCaptureService();
             using var sharedMemoryService = new SharedMemoryService();

@@ -18,6 +18,6 @@ Live training of Reinforcement Learning (RL) agents on audio is prohibitively sl
     -   Define a Reward Function (e.g., penalize high-energy clashes, reward smooth transitions).
 
 ## Success Criteria
-- [ ] C# engine processes a 3-minute song in seconds (10x+ speed).
-- [ ] Python can step the C# engine deterministically.
-- [ ] The system exposes a standard `gymnasium` API for RL algorithms (PPO, SAC).
+- [x] C# engine processes a 3-minute song in seconds (10x+ speed).
+- [x] Python can step the C# engine deterministically.
+- [x] The system exposes a standard `gymnasium` API for RL algorithms (PPO, SAC).
