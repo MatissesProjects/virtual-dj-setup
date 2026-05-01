@@ -106,6 +106,9 @@ def main():
                     analyzer.add_frame(features)
                     trends = analyzer.analyze()
                     
+                    # High-bandwidth verification: calculate max FFT bin
+                    max_fft = max(features['fft']) if features['fft'] else 0
+                    
                     if trends:
                         if trends['rms_slope'] > 0.05:
                             if current_intent != IntentType.CREATE_TENSION:
@@ -115,7 +118,7 @@ def main():
                             emitter.emit(IntentType.EXECUTE_DROP)
                             current_intent = IntentType.IDLE
 
-                    print(f"\rVibe: {current_intent.name: <20} | Auth: {authority} | Chords: {str(current_chords)[:20]}...    ", end="")
+                    print(f"\rVibe: {current_intent.name: <15} | FFT Max: {max_fft:.2f} | Chords: {str(current_chords)[:15]}...    ", end="")
             
             time.sleep(0.05)
     except KeyboardInterrupt:
