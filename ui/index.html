@@ -31,6 +31,11 @@
                     <div class="label" style="color: #03dac6;">AI Dynamic EQ Active</div>
                     <div style="font-weight: bold;">Ducking Clash @ {{ duckingFreq }} Hz</div>
                 </div>
+
+                <div style="margin-top: 15px; padding: 10px; background: rgba(187, 134, 252, 0.1); border-radius: 4px;">
+                    <div class="label" style="color: #bb86fc;">CNN Spectrogram Analysis</div>
+                    <div style="font-size: 1.2em; font-weight: bold;">{{ classification.class }} ({{ (classification.confidence * 100).toFixed(1) }}%)</div>
+                </div>
             </div>
             <div class="card">
                 <div class="label">Master RMS</div>
@@ -70,6 +75,7 @@
                 const chords = ref([])
                 const duckingFreq = ref(0)
                 const xfader = ref(0.5)
+                const classification = ref({ class: 'Unknown', confidence: 0 })
                 let ws = null
 
                 const connect = () => {
@@ -82,6 +88,7 @@
                         centroid.value = Math.round(data.centroid)
                         chords.value = data.chords || []
                         duckingFreq.value = data.ducking ? Math.round(data.ducking.freq) : 0
+                        classification.value = data.classification || { class: 'Unknown', confidence: 0 }
                         // Only sync xfader if not currently dragging? 
                         // For simplicity, just read it here for AI moves
                         if (authority.value === 'AI') {
@@ -106,7 +113,7 @@
                     fetch('http://localhost:8000/yield', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, updateXFader, takeover, yieldToAi }
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, updateXFader, takeover, yieldToAi }
             }
         }).mount('#app')
     </script>
