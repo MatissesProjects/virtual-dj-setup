@@ -20,9 +20,10 @@ namespace VirtualDj.Engine
             using var sharedMemoryService = new SharedMemoryService();
             using var intentListener = new IntentListener();
             
-            // Track 11: Multi-Deck Support
+            // Track 13: Multi-Deck & Crossfader
             using var deckA = new VirtualDeck("Deck A", captureService.WaveFormat);
-            // using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat); // Ready for future
+            using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat);
+            using var masterMixer = new MasterMixer(deckA, deckB, captureService.WaveFormat);
             
             var intentExecutor = new IntentExecutor(deckA.Pipeline);
             using var midiService = new MidiService(deckA.Pipeline);
@@ -44,6 +45,7 @@ namespace VirtualDj.Engine
             {
                 // 1. Write to Shared Memory for Python (passing current song index and full FFT)
                 sharedMemoryService.WriteFeatureFrame(frame, 0, frame.MagnitudeSpectrum ?? Array.Empty<float>());
+                sharedMemoryService.WriteCrossfaderPosition(masterMixer.Crossfader.Position);
 
                 // 2. Read Ducking Commands from Python (Bi-directional MMF)
                 var (freq, gain) = sharedMemoryService.ReadDuckingParams();
@@ -52,11 +54,14 @@ namespace VirtualDj.Engine
                     deckA.Pipeline.SetDucking(freq, gain);
                 }
 
-                // 3. Local Debug Output
+                // 3. Read Crossfader from Python (AI/UI control)
+                masterMixer.Crossfader.Position = sharedMemoryService.ReadCrossfaderPosition();
+
+                // 4. Local Debug Output
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
                 var song = playlistManager.CurrentSong;
-                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Tempo: {deckA.Playback.Tempo:F2}x | Auth: {frame.Authority}    ");
+                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | X-Fader: {masterMixer.Crossfader.Position:F2} | Auth: {frame.Authority}    ");
             };
 
             captureService.DataAvailable += (s, e) =>
@@ -72,16 +77,17 @@ namespace VirtualDj.Engine
                     floatBuffer[i] = waveBuffer.FloatBuffer[i];
                 }
 
-                // Process through Deck A
+                // Process through Decks (Currently both getting same input for demo)
                 deckA.Process(floatBuffer, sampleCount, captureService.WaveFormat);
+                deckB.Process(floatBuffer, sampleCount, captureService.WaveFormat);
             };
 
             intentListener.Start();
             midiService.Start();
-            deckA.Playback.Start();
+            masterMixer.Start();
             captureService.Start();
 
-            Console.WriteLine("Press any key to stop... (Press 'M' for Manual, 'T' to increase Tempo)");
+            Console.WriteLine("Press any key to stop... (Press 'M' for Manual, 'C' to toggle Crossfader)");
             
             while (true)
             {
@@ -92,9 +98,11 @@ namespace VirtualDj.Engine
                     {
                         deckA.Pipeline.ForceManualOverride();
                     }
-                    else if (key == ConsoleKey.T)
+                    else if (key == ConsoleKey.C)
                     {
-                        deckA.Playback.Tempo += 0.05f;
+                        // Toggle Crossfader Position for demo
+                        masterMixer.Crossfader.Position = masterMixer.Crossfader.Position < 0.5f ? 1.0f : 0.0f;
+                        Console.WriteLine($"\n[MIXER] Crossfader moved to: {masterMixer.Crossfader.Position}");
                     }
                     else
                     {
@@ -105,7 +113,7 @@ namespace VirtualDj.Engine
             }
 
             captureService.Stop();
-            deckA.Dispose();
+            masterMixer.Dispose();
             midiService.Stop();
             intentListener.Stop();
         }

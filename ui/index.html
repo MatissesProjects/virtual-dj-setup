@@ -50,6 +50,12 @@
             <button @click="takeover">Manual Override</button>
             <button @click="yieldToAi" style="background: #03dac6;">Yield to AI</button>
         </div>
+
+        <div class="card" style="margin-top: 20px;">
+            <div class="label">Crossfader: Deck A <---> Deck B</div>
+            <input type="range" min="0" max="1" step="0.01" v-model="xfader" @input="updateXFader" style="width: 100%; margin-top: 10px;">
+            <div style="text-align: center; font-weight: bold; margin-top: 5px;">{{ xfader }}</div>
+        </div>
     </div>
 
     <script type="module">
@@ -63,6 +69,7 @@
                 const centroid = ref(0)
                 const chords = ref([])
                 const duckingFreq = ref(0)
+                const xfader = ref(0.5)
                 let ws = null
 
                 const connect = () => {
@@ -75,11 +82,20 @@
                         centroid.value = Math.round(data.centroid)
                         chords.value = data.chords || []
                         duckingFreq.value = data.ducking ? Math.round(data.ducking.freq) : 0
+                        // Only sync xfader if not currently dragging? 
+                        // For simplicity, just read it here for AI moves
+                        if (authority.value === 'AI') {
+                            xfader.value = data.xfader
+                        }
                     }
                     ws.onclose = () => setTimeout(connect, 1000)
                 }
 
                 onMounted(connect)
+
+                const updateXFader = () => {
+                    fetch(`http://localhost:8000/crossfade?position=${xfader.value}`, { method: 'POST' })
+                }
 
                 const takeover = () => {
                     // Send command to python which sends to C#
@@ -90,7 +106,7 @@
                     fetch('http://localhost:8000/yield', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, takeover, yieldToAi }
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, updateXFader, takeover, yieldToAi }
             }
         }).mount('#app')
     </script>

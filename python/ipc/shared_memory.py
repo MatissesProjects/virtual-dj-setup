@@ -34,7 +34,9 @@ class SharedMemoryReader:
         
         # 1. Read the atomic WritePointer to know which slot is safe to read
         self.mm.seek(self.state_offset)
-        write_ptr = struct.unpack('i', self.mm.read(4))[0]
+        # Read WritePtr(0), Done(4), StepCmd(8), StepSize(12), DuckF(16), DuckG(20), XFader(24)
+        state_header = self.mm.read(28)
+        write_ptr, is_done, step_cmd, step_size, duck_f, duck_g, xfader = struct.unpack('i i i i f f f', state_header)
         
         if write_ptr < 0 or write_ptr >= self.buffer_slots:
             return None # Uninitialized or corrupted pointer
@@ -42,13 +44,13 @@ class SharedMemoryReader:
         # 2. Calculate offset for the current complete slot
         slot_offset = self.slots_offset + (write_ptr * self.slot_size)
         
-        # Read Header (40 bytes used currently out of 64)
+        # Read Data Slot Header (40 bytes used currently)
         self.mm.seek(slot_offset)
-        header_data = self.mm.read(40)
+        data_header = self.mm.read(40)
         
         try:
             # i: seq, f: rms, f: centroid, f: peak, i: auth, i: song, q: ticks, i: peak_flag
-            res = struct.unpack('i fff ii q i', header_data)
+            res = struct.unpack('i fff ii q i', data_header)
             seq, rms, centroid, peak, auth, song, ticks, peak_flag = res
             
             # Prevent double reading the same frame
@@ -70,10 +72,17 @@ class SharedMemoryReader:
                 "song_index": song,
                 "ticks": ticks,
                 "is_peak": peak_flag == 1,
-                "fft": list(fft_array)
+                "fft": list(fft_array),
+                "xfader": xfader
             }
         except struct.error:
             return None
+
+    def write_xfader(self, position):
+        if not self.mm:
+            return
+        self.mm.seek(self.state_offset + 24)
+        self.mm.write(struct.pack('f', float(position)))
 
     def write_ducking(self, frequency, gain_db):
         if not self.mm:

@@ -20,6 +20,7 @@ namespace VirtualDj.Engine
         // [12-15] StepSize (Int32)
         // [16-19] DuckFreq (Float)
         // [20-23] DuckGain (Float)
+        // [24-27] CrossfaderPos (Float)
         // [64..] Ring Buffer Slots (SlotSize * BufferSlots)
         private const int StateOffset = 0;
         private const int SlotsOffset = 64;
@@ -33,6 +34,16 @@ namespace VirtualDj.Engine
         {
             _mmf = MemoryMappedFile.CreateOrOpen(MapName, TotalBufferSize);
             _accessor = _mmf.CreateViewAccessor();
+        }
+
+        public void WriteCrossfaderPosition(float pos)
+        {
+            _accessor.Write(StateOffset + 24, pos);
+        }
+
+        public float ReadCrossfaderPosition()
+        {
+            return _accessor.ReadSingle(StateOffset + 24);
         }
 
         public void WriteFeatureFrame(FeatureFrame frame, int songIndex, float[] fftMagnitudes)

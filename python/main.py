@@ -28,7 +28,7 @@ app.add_middleware(
 )
 
 connected_websockets = set()
-latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}}
+latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -55,6 +55,12 @@ async def yield_control():
     print("\n[UI] Yield to AI requested via Dashboard.")
     return {"status": "ok"}
 
+@app.post("/crossfade")
+async def crossfade(position: float):
+    # This will be picked up by the main loop
+    latest_data["xfader"] = position
+    return {"status": "ok"}
+
 def run_web_server():
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")
@@ -78,10 +84,13 @@ def main():
     current_chords = []
 
     try:
-        print("System Live! Chord Retrieval & Semantic Ducking Active.")
+        print("System Live! Chord Retrieval & Multi-Deck Mixing Active.")
         while True:
             features = reader.read_features()
             if features:
+                # Sync XFader from UI to C#
+                reader.write_xfader(latest_data["xfader"])
+
                 # Update Playlist Context
                 if features['song_index'] != current_song_index:
                     current_song_index = features['song_index']
@@ -93,24 +102,13 @@ def main():
 
                 authority = "AI" if features['authority'] == 0 else "HUMAN"
                 
-                # SEMANTIC DUCKING: 
-                # Simulate a clash if energy is high. Find the peak frequency.
-                if features['rms'] > 0.05:
-                    # Find strongest freq in current stream
-                    peak_freq = features['peak']
-                    # Apply a surgical dip at that frequency to "carve space" (Self-ducking demo)
-                    reader.write_ducking(peak_freq, -6.0) # 6dB dip
-                    latest_data["ducking"] = {"freq": peak_freq, "gain": -6.0}
-                else:
-                    reader.write_ducking(0, 0)
-                    latest_data["ducking"] = {"freq": 0, "gain": 0}
-
                 # Update latest data for WebSocket broadcast
                 latest_data["rms"] = 20 * (features['rms'] + 0.000001)
                 latest_data["centroid"] = features['centroid']
                 latest_data["authority"] = authority
                 latest_data["vibe"] = current_intent.name
                 latest_data["chords"] = current_chords
+                # latest_data["xfader"] = features['xfader'] # Optionally read back
 
                 if features['authority'] == 1:
                     logger.log(features, {"width": 1.0, "ratio": 4.0})
