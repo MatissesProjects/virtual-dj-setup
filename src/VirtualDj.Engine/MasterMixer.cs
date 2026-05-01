@@ -9,16 +9,20 @@ namespace VirtualDj.Engine
         private readonly VirtualDeck _deckB;
         private readonly Crossfader _crossfader;
         private readonly SharedAudioBridge _audioBridge;
+        private readonly NetworkAudioBridge _networkBridge;
         private readonly WaveFormat _format;
         private readonly WasapiOut _output;
 
-        public MasterMixer(VirtualDeck deckA, VirtualDeck deckB, WaveFormat format)
+        public bool UseRemoteAi { get; set; } = false;
+
+        public MasterMixer(VirtualDeck deckA, VirtualDeck deckB, WaveFormat format, string remoteAiIp = "127.0.0.1")
         {
             _deckA = deckA;
             _deckB = deckB;
             _format = format;
             _crossfader = new Crossfader();
             _audioBridge = new SharedAudioBridge();
+            _networkBridge = new NetworkAudioBridge(remoteAiIp);
             
             _output = new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 20);
             _output.Init(this);
@@ -26,8 +30,14 @@ namespace VirtualDj.Engine
 
         public Crossfader Crossfader => _crossfader;
         public SharedAudioBridge AudioBridge => _audioBridge;
+        public NetworkAudioBridge NetworkBridge => _networkBridge;
 
-        public void Start() => _output.Play();
+        public void Start() 
+        {
+            if (UseRemoteAi) _networkBridge.Connect();
+            _output.Play();
+        }
+
         public void Stop() => _output.Stop();
 
         private readonly float[] _stemVocal = new float[2048];
@@ -47,17 +57,25 @@ namespace VirtualDj.Engine
             int readA = _deckA.Playback.Read(bufferA, 0, samplesRequired);
             int readB = _deckB.Playback.Read(bufferB, 0, samplesRequired);
 
-            // 2. Stream Deck A to Python for Stem Separation (The "Neural Bridge")
-            _audioBridge.WriteInput(bufferA, samplesRequired);
+            // 2. Neural Bridge (Local or Remote)
+            if (UseRemoteAi && _networkBridge.IsConnected)
+            {
+                _networkBridge.SendInput(bufferA, samplesRequired);
+                Buffer.BlockCopy(_networkBridge.GetStem(1), 0, _stemVocal, 0, samplesRequired * 4);
+                Buffer.BlockCopy(_networkBridge.GetStem(2), 0, _stemDrums, 0, samplesRequired * 4);
+                Buffer.BlockCopy(_networkBridge.GetStem(3), 0, _stemBass, 0, samplesRequired * 4);
+                Buffer.BlockCopy(_networkBridge.GetStem(4), 0, _stemOther, 0, samplesRequired * 4);
+            }
+            else
+            {
+                _audioBridge.WriteInput(bufferA, samplesRequired);
+                _audioBridge.ReadStem(1, _stemVocal, samplesRequired);
+                _audioBridge.ReadStem(2, _stemDrums, samplesRequired);
+                _audioBridge.ReadStem(3, _stemBass, samplesRequired);
+                _audioBridge.ReadStem(4, _stemOther, samplesRequired);
+            }
 
-            // 3. Read Stems back from Python (with optional fallback)
-            // Note: In a production scenario, we'd use a jitter buffer here.
-            _audioBridge.ReadStem(1, _stemVocal, samplesRequired);
-            _audioBridge.ReadStem(2, _stemDrums, samplesRequired);
-            _audioBridge.ReadStem(3, _stemBass, samplesRequired);
-            _audioBridge.ReadStem(4, _stemOther, samplesRequired);
-
-            // 4. Mix through crossfader
+            // 3. Mix through crossfader
             _crossfader.Process(bufferA, bufferB, waveBuffer.FloatBuffer, samplesRequired);
             
             return count;

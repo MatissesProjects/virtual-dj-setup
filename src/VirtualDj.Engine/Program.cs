@@ -20,10 +20,23 @@ namespace VirtualDj.Engine
             using var sharedMemoryService = new SharedMemoryService();
             using var intentListener = new IntentListener();
             
-            // Track 13: Multi-Deck & Crossfader
+            // Track 13 & 15: Multi-Deck & Distributed AI
+            string remoteAiIp = "127.0.0.1";
+            bool useRemoteAi = false;
+
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] == "--remote-ai" && i + 1 < args.Length)
+                {
+                    remoteAiIp = args[i + 1];
+                    useRemoteAi = true;
+                }
+            }
+
             using var deckA = new VirtualDeck("Deck A", captureService.WaveFormat);
             using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat);
-            using var masterMixer = new MasterMixer(deckA, deckB, captureService.WaveFormat);
+            using var masterMixer = new MasterMixer(deckA, deckB, captureService.WaveFormat, remoteAiIp);
+            masterMixer.UseRemoteAi = useRemoteAi;
             
             var intentExecutor = new IntentExecutor(deckA.Pipeline, masterMixer);
             using var midiService = new MidiService(deckA.Pipeline);
