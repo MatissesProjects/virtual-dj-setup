@@ -30,8 +30,8 @@ namespace VirtualDj.Engine
             _remoteIp = remoteIp;
             _port = port;
             
-            // Initialize stem buffers
-            for (int i = 1; i <= 4; i++)
+            // Initialize stem buffers (1=Vocals, 2=Drums, 3=Bass, 4=Other, 5=Bridge)
+            for (int i = 1; i <= 5; i++)
                 _stemBuffers[i] = new float[BlockSize * Channels];
         }
 

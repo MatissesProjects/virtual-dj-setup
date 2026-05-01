@@ -35,7 +35,8 @@ namespace VirtualDj.Engine
 
             using var deckA = new VirtualDeck("Deck A", captureService.WaveFormat);
             using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat);
-            using var masterMixer = new MasterMixer(deckA, deckB, captureService.WaveFormat, remoteAiIp);
+            using var bridgeDeck = new VirtualDeck("Bridge", captureService.WaveFormat);
+            using var masterMixer = new MasterMixer(deckA, deckB, bridgeDeck, captureService.WaveFormat, remoteAiIp);
             masterMixer.UseRemoteAi = useRemoteAi;
             
             var intentExecutor = new IntentExecutor(deckA.Pipeline, masterMixer);

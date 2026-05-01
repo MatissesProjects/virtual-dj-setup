@@ -13,6 +13,8 @@ from brain.spectrogram_builder import SpectrogramBuilder
 from pydantic import BaseModel
 from brain.audio_classifier import AudioClassifier
 from brain.stem_separator import StemSeparator
+from brain.music_analyzer import MusicAnalyzer
+from brain.bridge_generator import BridgeGenerator
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -84,6 +86,33 @@ async def update_stems(stems: StemsUpdate):
     latest_data["stems"]["other"] = stems.other
     return {"status": "ok"}
 
+@app.post("/generate-bridge")
+async def generate_bridge(duration: int = 8):
+    print(f"\n[AI] Generative Bridge requested ({duration}s)...")
+    # For prototype, use mock anchors. Real version analyzes PLAYLIST.
+    anchor_a = {"key": "C", "style_prompt": "Deep House at 124 BPM"}
+    anchor_b = {"key": "G", "style_prompt": "Melodic Techno at 128 BPM"}
+    
+    bridge = bridge_gen.generate_bridge(anchor_a, anchor_b, duration_sec=duration)
+    
+    if bridge:
+        try:
+            # Send to AI machine (or local server) via management port
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect(('localhost', 8888)) 
+                pcm_bytes = bridge['audio'].tobytes()
+                s.sendall(struct.pack('i', len(pcm_bytes)))
+                s.sendall(pcm_bytes)
+            
+            # Emit Intent to C# to activate the bridge deck
+            emitter.emit(IntentType.GENERATE_BRIDGE)
+            return {"status": "ok", "prompt": bridge['prompt']}
+        except Exception as e:
+            print(f"[BRIDGE] Error sending to server: {e}")
+            return {"status": "error", "message": str(e)}
+            
+    return {"status": "failed"}
+
 def run_web_server():
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="error")
@@ -91,6 +120,7 @@ def run_web_server():
 def main():
     threading.Thread(target=run_web_server, daemon=True).start()
     
+    global emitter, bridge_gen
     reader = SharedMemoryReader()
     emitter = IntentEmitter()
     analyzer = TrendAnalyzer(window_size=60)
@@ -98,6 +128,8 @@ def main():
     clash_detector = ClashDetector()
     spec_builders = {0: SpectrogramBuilder(), 1: SpectrogramBuilder()}
     classifier = AudioClassifier()
+    
+    bridge_gen = BridgeGenerator()
 
     # Track 15: Stem Separation
     stem_worker = StemSeparator()

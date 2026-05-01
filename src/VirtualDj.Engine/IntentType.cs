@@ -7,6 +7,7 @@ namespace VirtualDj.Engine
         ExecuteDrop = 2,
         SmoothBlend = 3,
         CleanCut = 4,
-        ApplyDucking = 5
+        ApplyDucking = 5,
+        GenerateBridge = 6
     }
 }

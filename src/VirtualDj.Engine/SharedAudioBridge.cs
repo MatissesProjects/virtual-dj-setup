@@ -18,8 +18,8 @@ namespace VirtualDj.Engine
         private const int HeaderSize = 64;
         private const int AudioDataSize = BlockSize * Channels * sizeof(float);
         
-        // Stems: Input, Vocal, Drum, Bass, Other (5 discrete streams)
-        private const int StreamCount = 5;
+        // Stems: Input, Vocal, Drum, Bass, Other, Bridge (6 discrete streams)
+        private const int StreamCount = 6;
         private const int StreamSize = HeaderSize + AudioDataSize;
         private const int TotalBufferSize = StreamSize * StreamCount;
 
@@ -45,17 +45,15 @@ namespace VirtualDj.Engine
 
         /// <summary>
         /// Reads a specific stem from Python.
-        /// stemIndex: 1=Vocal, 2=Drum, 3=Bass, 4=Other
+        /// stemIndex: 1=Vocal, 2=Drum, 3=Bass, 4=Other, 5=Bridge
         /// </summary>
         public int ReadStem(int stemIndex, float[] buffer, int count)
         {
-            if (stemIndex < 1 || stemIndex > 4) return 0;
+            if (stemIndex < 1 || stemIndex > 5) return 0;
             
             int offset = stemIndex * StreamSize;
             int seq = _accessor.ReadInt32(offset + 8);
             
-            // In a real implementation, we'd check sequence numbers to ensure freshness.
-            // For now, we perform a direct read.
             _accessor.ReadArray(offset + HeaderSize, buffer, 0, Math.Min(count, BlockSize * Channels));
             return count;
         }

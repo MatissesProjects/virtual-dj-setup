@@ -54,6 +54,7 @@
         <div class="controls">
             <button @click="takeover">Manual Override</button>
             <button @click="yieldToAi" style="background: #03dac6;">Yield to AI</button>
+            <button @click="generateBridge" style="background: #ff0266; color: white;">AI Gen Bridge</button>
         </div>
 
         <div style="display: flex; gap: 20px; margin-top: 20px;">
@@ -150,7 +151,11 @@
                     fetch('http://localhost:8000/yield', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, updateXFader, updateStems, takeover, yieldToAi }
+                const generateBridge = () => {
+                    fetch('http://localhost:8000/generate-bridge', { method: 'POST' })
+                }
+
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, updateXFader, updateStems, takeover, yieldToAi, generateBridge }
             }
         }).mount('#app')
     </script>

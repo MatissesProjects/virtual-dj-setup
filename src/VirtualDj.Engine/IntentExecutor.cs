@@ -41,6 +41,12 @@ namespace VirtualDj.Engine
                     Console.WriteLine($"[MACRO] Smooth Blend: Fading to {target} over 8 seconds.");
                     break;
 
+                case IntentType.GenerateBridge:
+                    // Fade in the bridge additive layer
+                    _mixer.BridgeLevel = 1.0f;
+                    Console.WriteLine("[MACRO] Generative Bridge Active: Fading in AI Synthesis.");
+                    break;
+
                 case IntentType.Idle:
                     _pipeline.Width = 1.2f;
                     _pipeline.CompressionRatio = 2.0f;

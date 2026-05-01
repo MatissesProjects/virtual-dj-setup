@@ -7,6 +7,7 @@ namespace VirtualDj.Engine
     {
         private readonly VirtualDeck _deckA;
         private readonly VirtualDeck _deckB;
+        private readonly VirtualDeck _bridgeDeck;
         private readonly Crossfader _crossfader;
         private readonly SharedAudioBridge _audioBridge;
         private readonly NetworkAudioBridge _networkBridge;
@@ -14,11 +15,13 @@ namespace VirtualDj.Engine
         private readonly WasapiOut _output;
 
         public bool UseRemoteAi { get; set; } = false;
+        public float BridgeLevel { get; set; } = 0.0f;
 
-        public MasterMixer(VirtualDeck deckA, VirtualDeck deckB, WaveFormat format, string remoteAiIp = "127.0.0.1")
+        public MasterMixer(VirtualDeck deckA, VirtualDeck deckB, VirtualDeck bridgeDeck, WaveFormat format, string remoteAiIp = "127.0.0.1")
         {
             _deckA = deckA;
             _deckB = deckB;
+            _bridgeDeck = bridgeDeck;
             _format = format;
             _crossfader = new Crossfader();
             _audioBridge = new SharedAudioBridge();
@@ -31,6 +34,7 @@ namespace VirtualDj.Engine
         public Crossfader Crossfader => _crossfader;
         public SharedAudioBridge AudioBridge => _audioBridge;
         public NetworkAudioBridge NetworkBridge => _networkBridge;
+        public VirtualDeck BridgeDeck => _bridgeDeck;
 
         public void Start() 
         {
@@ -44,6 +48,7 @@ namespace VirtualDj.Engine
         private readonly float[] _stemDrums = new float[2048];
         private readonly float[] _stemBass = new float[2048];
         private readonly float[] _stemOther = new float[2048];
+        private readonly float[] _bridgePCM = new float[2048];
 
         public (float Vocal, float Drums, float Bass, float Other) StemVolumes { get; set; } = (1.0f, 1.0f, 1.0f, 1.0f);
         public bool StemsActive { get; set; } = true; // Assume active for Track 15 prototype
@@ -56,9 +61,10 @@ namespace VirtualDj.Engine
             float[] bufferA = new float[samplesRequired];
             float[] bufferB = new float[samplesRequired];
 
-            // 1. Read from both decks
+            // 1. Read from decks
             int readA = _deckA.Playback.Read(bufferA, 0, samplesRequired);
             int readB = _deckB.Playback.Read(bufferB, 0, samplesRequired);
+            // We don't read from _bridgeDeck via Playback here because we stream its PCM directly from Python into _bridgePCM
 
             // 2. Neural Bridge (Local or Remote)
             if (UseRemoteAi && _networkBridge.IsConnected)
@@ -68,6 +74,7 @@ namespace VirtualDj.Engine
                 Buffer.BlockCopy(_networkBridge.GetStem(2), 0, _stemDrums, 0, samplesRequired * 4);
                 Buffer.BlockCopy(_networkBridge.GetStem(3), 0, _stemBass, 0, samplesRequired * 4);
                 Buffer.BlockCopy(_networkBridge.GetStem(4), 0, _stemOther, 0, samplesRequired * 4);
+                Buffer.BlockCopy(_networkBridge.GetStem(5), 0, _bridgePCM, 0, samplesRequired * 4);
             }
             else
             {
@@ -76,22 +83,20 @@ namespace VirtualDj.Engine
                 _audioBridge.ReadStem(2, _stemDrums, samplesRequired);
                 _audioBridge.ReadStem(3, _stemBass, samplesRequired);
                 _audioBridge.ReadStem(4, _stemOther, samplesRequired);
+                _audioBridge.ReadStem(5, _bridgePCM, samplesRequired);
             }
 
-            // Optional: Reconstruct Deck A from stems if Stem separation is active and modifying volumes
+            // Optional: Reconstruct Deck A from stems
             if (StemsActive)
             {
                 for (int i = 0; i < samplesRequired; i++)
                 {
-                    // If stems are empty (Python not running), this will mute Deck A.
-                    // A real app would fallback to original bufferA if stems are empty.
                     float reconstructed = 
                         (_stemVocal[i] * StemVolumes.Vocal) + 
                         (_stemDrums[i] * StemVolumes.Drums) + 
                         (_stemBass[i] * StemVolumes.Bass) + 
                         (_stemOther[i] * StemVolumes.Other);
                     
-                    // Simple fallback: if all stems are exactly 0, keep original bufferA
                     if (_stemVocal[i] == 0 && _stemDrums[i] == 0 && _stemBass[i] == 0 && _stemOther[i] == 0)
                         continue; 
 
@@ -99,8 +104,13 @@ namespace VirtualDj.Engine
                 }
             }
 
-            // 3. Mix through crossfader
+            // 3. Mix through crossfader + Bridge
             _crossfader.Process(bufferA, bufferB, waveBuffer.FloatBuffer, samplesRequired);
+            
+            for (int i = 0; i < samplesRequired; i++)
+            {
+                waveBuffer.FloatBuffer[i] += _bridgePCM[i] * BridgeLevel;
+            }
             
             return count;
         }
