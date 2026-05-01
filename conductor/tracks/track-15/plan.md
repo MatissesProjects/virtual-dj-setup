@@ -1,0 +1,16 @@
+# Implementation Plan: Low-Latency Stem Separation
+
+## Phase 1: The High-Bandwidth IPC Bridge
+- [ ] Create `SharedAudioBridge.cs` in C# to manage raw PCM MMFs.
+- [ ] Implement `audio_ipc.py` in Python for high-speed PCM reading/writing.
+- [ ] Verify 44.1kHz stereo round-trip with zero loss.
+
+## Phase 2: Python De-mixing Implementation
+- [ ] Integrate the `audio-separator` library with an ONNX-optimized model.
+- [ ] Implement `stem_separator.py` with a thread-safe streaming buffer.
+- [ ] Benchmark latency and optimize for CPU/GPU utilization.
+
+## Phase 3: C# Stem Integration & UI
+- [ ] Refactor `MasterMixer.cs` to handle `StemDeck` routing.
+- [ ] Create `StemControl.vue` component for the dashboard.
+- [ ] Test real-time mashup capabilities (e.g., Deck A Drums + Deck B Vocals).
