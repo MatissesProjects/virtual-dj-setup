@@ -17,6 +17,10 @@ namespace VirtualDj.Engine
             using var midiService = new MidiService(dspPipeline);
             var playlistManager = new PlaylistManager();
 
+            // Buffering for Track 10
+            var audioBuffer = new CircularAudioBuffer(44100 * 10); // 10 seconds at 44.1k
+            using var playbackService = new DeckPlaybackService(audioBuffer, captureService.WaveFormat);
+
             // Mock Playlist
             playlistManager.AddSong("Get Lucky", "Daft Punk");
             playlistManager.AddSong("Blinding Lights", "The Weeknd");
@@ -38,7 +42,7 @@ namespace VirtualDj.Engine
                 double decibels = 20 * Math.Log10(frame.Rms);
                 if (double.IsInfinity(decibels)) decibels = -100;
                 var song = playlistManager.CurrentSong;
-                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Centroid: {frame.SpectralCentroid:F0} Hz | Auth: {frame.Authority}    ");
+                Console.Write($"\r[{song?.Title}] RMS: {decibels:F1} dB | Tempo: {playbackService.Tempo:F2}x | Auth: {frame.Authority}    ");
             };
 
             captureService.DataAvailable += (s, e) =>
@@ -54,14 +58,18 @@ namespace VirtualDj.Engine
                     floatBuffer[i] = waveBuffer.FloatBuffer[i];
                 }
 
+                // Write to Circular Buffer for Playback manipulation
+                audioBuffer.Write(floatBuffer, sampleCount);
+
                 dspPipeline.ProcessSamples(floatBuffer, sampleCount, captureService.WaveFormat);
             };
 
             intentListener.Start();
             midiService.Start();
+            playbackService.Start();
             captureService.Start();
 
-            Console.WriteLine("Press any key to stop... (Press 'M' to simulate manual override)");
+            Console.WriteLine("Press any key to stop... (Press 'M' for Manual, 'T' to increase Tempo)");
             
             while (true)
             {
@@ -72,6 +80,10 @@ namespace VirtualDj.Engine
                     {
                         dspPipeline.ForceManualOverride();
                     }
+                    else if (key == ConsoleKey.T)
+                    {
+                        playbackService.Tempo += 0.05f;
+                    }
                     else
                     {
                         break;
@@ -81,6 +93,7 @@ namespace VirtualDj.Engine
             }
 
             captureService.Stop();
+            playbackService.Stop();
             midiService.Stop();
             intentListener.Stop();
         }
