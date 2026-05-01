@@ -3,7 +3,7 @@ using NAudio.Wave;
 
 namespace VirtualDj.Engine
 {
-    public class VirtualDeck
+    public class VirtualDeck : IDisposable
     {
         public string Name { get; }
         public CircularAudioBuffer Buffer { get; }
@@ -22,6 +22,11 @@ namespace VirtualDj.Engine
         {
             Buffer.Write(samples, count);
             Pipeline.ProcessSamples(samples, count, format);
+        }
+
+        public void Dispose()
+        {
+            // No unmanaged resources currently, but kept for interface compliance
         }
     }
 }
