@@ -25,7 +25,7 @@ namespace VirtualDj.Engine
             using var deckB = new VirtualDeck("Deck B", captureService.WaveFormat);
             using var masterMixer = new MasterMixer(deckA, deckB, captureService.WaveFormat);
             
-            var intentExecutor = new IntentExecutor(deckA.Pipeline);
+            var intentExecutor = new IntentExecutor(deckA.Pipeline, masterMixer);
             using var midiService = new MidiService(deckA.Pipeline);
             var playlistManager = new PlaylistManager();
 

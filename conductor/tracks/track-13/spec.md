@@ -20,4 +20,4 @@ A crossfader is the heart of DJ mixing. This track adds the ability to blend two
 - [x] Audio from both Deck A and Deck B is mixed and played back correctly.
 - [x] Moving the crossfader smoothly transitions between sources without glitches.
 - [x] Equal Power curve maintains consistent loudness across the transition.
-- [ ] AI can trigger a timed crossfade via the Intent channel. (Partial: UI control implemented)
+- [x] AI can trigger a timed crossfade via the Intent channel. (SmoothBlend intent implemented)

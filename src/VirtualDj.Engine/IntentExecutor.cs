@@ -3,10 +3,12 @@ namespace VirtualDj.Engine
     public class IntentExecutor
     {
         private readonly DspPipeline _pipeline;
+        private readonly MasterMixer _mixer;
 
-        public IntentExecutor(DspPipeline pipeline)
+        public IntentExecutor(DspPipeline pipeline, MasterMixer mixer)
         {
             _pipeline = pipeline;
+            _mixer = mixer;
         }
 
         public void Execute(IntentType intent)
@@ -30,6 +32,13 @@ namespace VirtualDj.Engine
                     _pipeline.Width = 1.1f;
                     _pipeline.CompressionRatio = 2.0f;
                     Console.WriteLine("[MACRO] Drop executed: Resetting stereo and dynamics for punch.");
+                    break;
+
+                case IntentType.SmoothBlend:
+                    // Toggle crossfader over 8 seconds (8000ms)
+                    float target = _mixer.Crossfader.Position < 0.5f ? 1.0f : 0.0f;
+                    _mixer.Crossfader.Automate(target, 8000, 44100);
+                    Console.WriteLine($"[MACRO] Smooth Blend: Fading to {target} over 8 seconds.");
                     break;
 
                 case IntentType.Idle:
