@@ -9,6 +9,8 @@ from ipc.intent_emitter import IntentEmitter, IntentType
 from brain.trend_analyzer import TrendAnalyzer
 from brain.chord_predictor import ChordPredictor
 from brain.clash_detector import ClashDetector
+from brain.spectrogram_builder import SpectrogramBuilder
+from brain.audio_classifier import AudioClassifier
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -28,7 +30,7 @@ app.add_middleware(
 )
 
 connected_websockets = set()
-latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5}
+latest_data = {"vibe": "IDLE", "authority": "AI", "rms": -60, "centroid": 0, "chords": [], "ducking": {"freq": 0, "gain": 0}, "xfader": 0.5, "classification": {"class": "Unknown", "confidence": 0}}
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -73,6 +75,8 @@ def main():
     analyzer = TrendAnalyzer(window_size=60)
     chord_predictor = ChordPredictor()
     clash_detector = ClashDetector()
+    spec_builder = SpectrogramBuilder()
+    classifier = AudioClassifier()
     logger = StateActionLogger()
     
     print("Waiting for C# engine...")
@@ -82,14 +86,23 @@ def main():
     current_intent = IntentType.IDLE
     current_song_index = -1
     current_chords = []
+    inference_counter = 0
 
     try:
-        print("System Live! Chord Retrieval & Multi-Deck Mixing Active.")
+        print("System Live! Chord Retrieval & CNN Analysis Active.")
         while True:
             features = reader.read_features()
             if features:
                 # Sync XFader from UI to C#
                 reader.write_xfader(latest_data["xfader"])
+
+                # Update Spectrogram & Run CNN Inference every 30 frames (~0.5s)
+                spec_builder.add_frame(features['fft'])
+                inference_counter += 1
+                if inference_counter >= 30:
+                    inference_counter = 0
+                    cnn_input = spec_builder.get_cnn_input()
+                    latest_data["classification"] = classifier.predict(cnn_input)
 
                 # Update Playlist Context
                 if features['song_index'] != current_song_index:

@@ -14,3 +14,4 @@
 - [Track 11: Semantic Audio Ducking (Dynamic Masking)](./tracks/track-11/index.md) - *Completed*
 - [Track 12: The Hyperbolic Time Chamber (Simulation Gym)](./tracks/track-12/index.md) - *Completed*
 - [Track 13: Multi-Deck Crossfader Logic](./tracks/track-13/index.md) - *Completed*
+- [Track 14: CNN-based Spectrogram Analysis](./tracks/track-14/index.md) - *In Progress*
