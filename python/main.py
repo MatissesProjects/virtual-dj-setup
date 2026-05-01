@@ -11,6 +11,7 @@ from brain.chord_predictor import ChordPredictor
 from brain.clash_detector import ClashDetector
 from brain.spectrogram_builder import SpectrogramBuilder
 from brain.audio_classifier import AudioClassifier
+from brain.stem_separator import StemSeparator
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -77,6 +78,11 @@ def main():
     clash_detector = ClashDetector()
     spec_builders = {0: SpectrogramBuilder(), 1: SpectrogramBuilder()}
     classifier = AudioClassifier()
+
+    # Track 15: Stem Separation
+    stem_worker = StemSeparator()
+    stem_worker.start()
+
     logger = StateActionLogger()
     
     # Track latest classification per deck
