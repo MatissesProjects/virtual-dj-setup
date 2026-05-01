@@ -1,8 +1,5 @@
 # Tracks Registry
 
-## Active Tracks
-- None (All planned tracks completed)
-
 ## Backlog
 - [Track 1: Project Scaffolding & MVP Audio Capture](./tracks/track-1/index.md) - *Completed*
 - [Track 2: Basic DSP Chain & Feature Extraction](./tracks/track-2/index.md) - *Completed*
@@ -16,3 +13,4 @@
 - [Track 10: Virtual Decks & Time-Stretching](./tracks/track-10/index.md) - *Completed*
 - [Track 11: Semantic Audio Ducking (Dynamic Masking)](./tracks/track-11/index.md) - *Completed*
 - [Track 12: The Hyperbolic Time Chamber (Simulation Gym)](./tracks/track-12/index.md) - *Completed*
+- [Track 13: Multi-Deck Crossfader Logic](./tracks/track-13/index.md) - *Completed*
