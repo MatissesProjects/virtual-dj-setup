@@ -3,9 +3,9 @@ namespace VirtualDj.Engine
     public class IntentExecutor
     {
         private readonly DspPipeline _pipeline;
-        private readonly MasterMixer _mixer;
+        private readonly MasterMixer? _mixer;
 
-        public IntentExecutor(DspPipeline pipeline, MasterMixer mixer)
+        public IntentExecutor(DspPipeline pipeline, MasterMixer? mixer = null)
         {
             _pipeline = pipeline;
             _mixer = mixer;
@@ -35,16 +35,22 @@ namespace VirtualDj.Engine
                     break;
 
                 case IntentType.SmoothBlend:
-                    // Toggle crossfader over 8 seconds (8000ms)
-                    float target = _mixer.Crossfader.Position < 0.5f ? 1.0f : 0.0f;
-                    _mixer.Crossfader.Automate(target, 8000, 44100);
-                    Console.WriteLine($"[MACRO] Smooth Blend: Fading to {target} over 8 seconds.");
+                    if (_mixer != null)
+                    {
+                        // Toggle crossfader over 8 seconds (8000ms)
+                        float target = _mixer.Crossfader.Position < 0.5f ? 1.0f : 0.0f;
+                        _mixer.Crossfader.Automate(target, 8000, 44100);
+                        Console.WriteLine($"[MACRO] Smooth Blend: Fading to {target} over 8 seconds.");
+                    }
                     break;
 
                 case IntentType.GenerateBridge:
-                    // Fade in the bridge additive layer
-                    _mixer.BridgeLevel = 1.0f;
-                    Console.WriteLine("[MACRO] Generative Bridge Active: Fading in AI Synthesis.");
+                    if (_mixer != null)
+                    {
+                        // Fade in the bridge additive layer
+                        _mixer.BridgeLevel = 1.0f;
+                        Console.WriteLine("[MACRO] Generative Bridge Active: Fading in AI Synthesis.");
+                    }
                     break;
 
                 case IntentType.Idle:

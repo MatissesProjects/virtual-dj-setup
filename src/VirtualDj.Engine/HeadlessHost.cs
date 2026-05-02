@@ -27,7 +27,7 @@ namespace VirtualDj.Engine
             using var reader = new AudioFileReader(_filePath);
             using var sharedMemoryService = new SharedMemoryService();
             using var deck = new VirtualDeck("HeadlessDeck", reader.WaveFormat);
-            var intentExecutor = new IntentExecutor(deck.Pipeline);
+            var intentExecutor = new IntentExecutor(deck.Pipeline, null);
 
             // Need an intent listener or we can just read commands from MMF in the future
             using var intentListener = new IntentListener();

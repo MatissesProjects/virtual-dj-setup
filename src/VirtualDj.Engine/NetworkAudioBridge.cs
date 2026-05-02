@@ -13,8 +13,8 @@ namespace VirtualDj.Engine
     {
         private readonly string _remoteIp;
         private readonly int _port;
-        private TcpClient _client;
-        private NetworkStream _stream;
+        private TcpClient? _client;
+        private NetworkStream? _stream;
         private bool _isConnected;
         
         private const int BlockSize = 1024;
@@ -56,7 +56,8 @@ namespace VirtualDj.Engine
 
         public void SendInput(float[] samples, int count)
         {
-            if (!_isConnected) return;
+            var stream = _stream;
+            if (!_isConnected || stream == null) return;
 
             try
             {
@@ -65,8 +66,8 @@ namespace VirtualDj.Engine
                 byte[] data = new byte[count * FloatSize];
                 Buffer.BlockCopy(samples, 0, data, 0, data.Length);
                 
-                _stream.Write(header, 0, 4);
-                _stream.Write(data, 0, data.Length);
+                stream.Write(header, 0, 4);
+                stream.Write(data, 0, data.Length);
             }
             catch
             {
@@ -79,23 +80,26 @@ namespace VirtualDj.Engine
             byte[] header = new byte[4];
             while (_isConnected)
             {
+                var stream = _stream;
+                if (stream == null) break;
+
                 try
                 {
                     // Expecting: [4 bytes stemIndex] [4 bytes dataSize] [Raw PCM Bytes]
-                    if (_stream.Read(header, 0, 4) == 4)
+                    if (stream.Read(header, 0, 4) == 4)
                     {
                         int stemIndex = BitConverter.ToInt32(header, 0);
-                        _stream.Read(header, 0, 4);
+                        stream.Read(header, 0, 4);
                         int dataSize = BitConverter.ToInt32(header, 0);
                         
                         byte[] data = new byte[dataSize];
                         int read = 0;
                         while (read < dataSize)
                         {
-                            read += _stream.Read(data, read, dataSize - read);
+                            read += stream.Read(data, read, dataSize - read);
                         }
 
-                        if (_stemBuffers.TryGetValue(stemIndex, out float[] buffer))
+                        if (_stemBuffers.TryGetValue(stemIndex, out float[]? buffer) && buffer != null)
                         {
                             Buffer.BlockCopy(data, 0, buffer, 0, dataSize);
                         }
@@ -110,7 +114,7 @@ namespace VirtualDj.Engine
 
         public float[] GetStem(int stemIndex)
         {
-            return _stemBuffers.TryGetValue(stemIndex, out float[] buffer) ? buffer : new float[0];
+            return _stemBuffers.TryGetValue(stemIndex, out float[]? buffer) ? buffer : Array.Empty<float>();
         }
 
         public bool IsConnected => _isConnected;
