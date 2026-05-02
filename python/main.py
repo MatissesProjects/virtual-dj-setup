@@ -201,6 +201,7 @@ def main():
                 latest_data["authority"] = authority
                 latest_data["vibe"] = current_intent.name
                 latest_data["chords"] = current_chords
+                latest_data["stems_rms"] = stem_worker.rms_levels
                 # latest_data["xfader"] = features['xfader'] # Optionally read back
 
                 if features['authority'] == 1:
@@ -234,3 +235,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+main()

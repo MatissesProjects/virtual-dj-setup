@@ -22,7 +22,7 @@ Elevate the UI from a static dashboard to a cinematic visualizer. This track imp
     -   Use `requestAnimationFrame` for smooth interpolation of uniform values.
 
 ## Success Criteria
-- [ ] Three.js canvas renders correctly behind the dashboard cards.
-- [ ] Visuals clearly pulse in sync with the drum stem.
-- [ ] Color scheme changes automatically when the AI intent shifts from `IDLE` to `CREATE_TENSION`.
-- [ ] Zero perceptible frame drops when stems are active.
+- [x] Three.js canvas renders correctly behind the dashboard cards.
+- [x] Visuals clearly pulse in sync with the drum stem.
+- [x] Color scheme changes automatically when the AI intent shifts from `IDLE` to `CREATE_TENSION`.
+- [x] Zero perceptible frame drops when stems are active.

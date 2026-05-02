@@ -67,6 +67,13 @@ class StemSeparator:
                     'other': raw_pcm * 1.0
                 }
                 
+                # Calculate real-time intensity for visualizer
+                for name, data in stems.items():
+                    # RMS calculation
+                    rms = np.sqrt(np.mean(data**2)) if len(data) > 0 else 0
+                    # Convert to approximate dB scale or just keep linear for shader
+                    self.rms_levels[name] = float(rms)
+
                 self.bridge.write_stems(stems)
                 
                 elapsed = (time.time() - start_time) * 1000
