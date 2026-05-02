@@ -37,6 +37,10 @@ class AudienceListener(commands.Bot):
         self.hype_level = 0.0 # Velocity [0.0, 1.0+]
         self.alpha = 0.5 # Higher alpha for testing responsiveness
         
+        self.loyalty_map = {} # user_id -> engagement_score
+        self.requests = [] # track request queue
+        self.votes = {"next": 0, "skip": 0}
+        
         self.message_count = 0
         self.last_reset = time.time()
         
@@ -48,8 +52,34 @@ class AudienceListener(commands.Bot):
 
     async def event_message(self, message):
         if message.echo: return
-        self._process_text(message.content)
+        
+        # 1. User Loyalty Tracking
+        user = message.author.name
+        self.loyalty_map[user] = self.loyalty_map.get(user, 0) + 1
+        
+        # 2. Process Commands
+        if message.content.startswith('!'):
+            await self.handle_commands(message)
+        else:
+            self._process_text(message.content)
 
+    @commands.command(name='request')
+    async def request_command(self, ctx, *, track_name):
+        """Allows users to request tracks."""
+        self.requests.append({"user": ctx.author.name, "track": track_name})
+        # If in simulator mode, ctx.send might fail, so we check
+        if not self.simulator_mode:
+            await ctx.send(f"@{ctx.author.name}, request for '{track_name}' added to queue!")
+        print(f"[TWITCH] Request: {track_name} by {ctx.author.name}")
+
+    @commands.command(name='vote')
+    async def vote_command(self, ctx, choice):
+        """Vote for 'next' or 'skip'."""
+        if choice in self.votes:
+            self.votes[choice] += 1
+            if not self.simulator_mode:
+                await ctx.send(f"Vote cast for {choice}!")
+            
     def _process_text(self, text):
         """Processes a single line of chat text for sentiment and velocity."""
         # 1. Sentiment Analysis
@@ -63,7 +93,7 @@ class AudienceListener(commands.Bot):
         self.message_count += 1
         
         # Print for local debugging
-        print(f"[RAW] {text[:20]}... | Score: {compound:+.2f}")
+        # print(f"[RAW] {text[:20]}... | Score: {compound:+.2f}")
 
     def get_vibe_report(self):
         """Returns the current audience state for the RL loop."""
@@ -78,7 +108,10 @@ class AudienceListener(commands.Bot):
         return {
             "vibe": float(self.vibe_score),
             "hype": float(self.hype_level),
-            "status": "HYPE" if self.hype_level > 1.5 else "CHILL" if self.vibe_score > 0.2 else "NEUTRAL"
+            "status": "HYPE" if self.hype_level > 1.5 else "CHILL" if self.vibe_score > 0.2 else "NEUTRAL",
+            "requests": self.requests[-3:], # Show last 3 requests
+            "votes": self.votes,
+            "top_fans": sorted(self.loyalty_map.items(), key=lambda x: x[1], reverse=True)[:3]
         }
 
     def simulate_chat(self, text):

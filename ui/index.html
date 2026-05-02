@@ -59,6 +59,24 @@
                     </div>
                 </div>
 
+                <!-- Twitch Integration Extra Features -->
+                <div style="margin-top: 20px; padding: 10px; background: rgba(187, 134, 252, 0.05); border-radius: 4px; border: 1px solid rgba(187, 134, 252, 0.2);">
+                    <div class="label" style="color: #bb86fc; font-size: 0.8em;">Recent Twitch Requests</div>
+                    <div style="font-size: 0.9em; margin-top: 5px;">
+                        <div v-for="req in crowd.requests" :key="req.track" style="margin-bottom: 3px; color: #e0e0e0;">
+                            <span style="color: #bb86fc;">@{{ req.user }}:</span> {{ req.track }}
+                        </div>
+                        <div v-if="!crowd.requests || crowd.requests.length === 0" style="color: #666; font-style: italic;">No active requests</div>
+                    </div>
+                    
+                    <div class="label" style="color: #03dac6; font-size: 0.8em; margin-top: 10px;">Top Fans (Engagement)</div>
+                    <div style="display: flex; gap: 10px; margin-top: 5px; font-size: 0.8em;">
+                        <div v-for="fan in crowd.top_fans" :key="fan[0]" style="background: #333; padding: 2px 8px; border-radius: 10px;">
+                            {{ fan[0] }} ({{ fan[1] }})
+                        </div>
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px;">
                     <div class="label">Current Chords</div>
                     <div style="font-size: 1.2em; color: #03dac6; margin-top: 5px;">
