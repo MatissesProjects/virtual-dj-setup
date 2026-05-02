@@ -26,11 +26,18 @@ class StemSeparator:
         
         # In a real 2025 scenario, we'd use a causal, streaming-optimized model.
         # audio-separator handles the heavy lifting of model management.
-        self.separator.load_model(model_name)
+        if model_name != "MOCK":
+            self.separator.load_model(model_name)
         
         self.bridge = AudioBridge()
         self.is_running = False
         self._thread = None
+        self.rms_levels = {
+            'vocal': 0.0,
+            'drums': 0.0,
+            'bass': 0.0,
+            'other': 0.0
+        }
 
     def start(self):
         if not self.bridge.connect():
