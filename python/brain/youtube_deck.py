@@ -45,15 +45,50 @@ class YouTubeDeck:
     async def _async_load_track(self, url):
         print(f"[YOUTUBE-DECK] {self.name} loading: {url}")
         self.current_url = url
-        await self.page.goto(url)
-        # Wait for the play button or try to autoplay
+        
+        # 1. Navigate and wait for initial load
+        await self.page.goto(url, wait_until="domcontentloaded")
+        
+        # 2. Handle common "Consent" or "Sign In" popups that block the UI
         try:
-            # YouTube sometimes needs a click or just plays due to autoplay policy
-            await self.page.click('button.ytp-play-button', timeout=5000)
-            self.is_playing = True
+            # Common 'Agree' button for Google/YouTube consent
+            consent_selectors = [
+                'button[aria-label="Accept all"]',
+                'button[aria-label="Agree"]',
+                '#confirm-button'
+            ]
+            for selector in consent_selectors:
+                if await self.page.is_visible(selector, timeout=2000):
+                    await self.page.click(selector)
+                    print(f"[YOUTUBE-DECK] {self.name} bypassed consent.")
+                    break
         except:
-            # Already playing or failed to find button
             pass
+
+        # 3. Wait for video element and attempt play
+        try:
+            await self.page.wait_for_selector('video', timeout=10000)
+            
+            # Try multiple play triggers
+            # a) Direct JS play (most reliable)
+            await self.page.evaluate("document.querySelector('video').play()")
+            
+            # b) Standard YouTube Play Button
+            if await self.page.is_visible('.ytp-play-button'):
+                await self.page.click('.ytp-play-button', timeout=1000)
+                
+            # c) YouTube Music Play Button
+            if await self.page.is_visible('#play-pause-button'):
+                await self.page.click('#play-pause-button', timeout=1000)
+
+            # d) Global Play shortcut
+            await self.page.keyboard.press('k')
+            
+            self.is_playing = True
+            print(f"[YOUTUBE-DECK] {self.name} play triggered.")
+        except Exception as e:
+            print(f"[YOUTUBE-DECK] {self.name} play attempt finished (check results). Error if any: {e}")
+            self.is_playing = False
 
     def toggle_play(self):
         if self._loop:

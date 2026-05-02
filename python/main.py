@@ -35,15 +35,6 @@ orchestrator = None # Global for main loop/API access
 class SetStart(BaseModel):
     urls: list[str]
 
-@app.post("/start_set")
-async def start_set(start: SetStart):
-    orchestrator.start_set(start.urls)
-    return {"status": "ok"}
-
-@app.post("/transition")
-async def transition():
-    orchestrator.trigger_transition()
-    return {"status": "ok"}
 
 # Web Server for UI
 app = FastAPI()
@@ -53,6 +44,17 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.post("/start_set")
+async def start_set(start: SetStart):
+    orchestrator.start_set(start.urls)
+    return {"status": "ok"}
+
+@app.post("/transition")
+async def transition():
+    orchestrator.trigger_transition()
+    return {"status": "ok"}
 
 connected_websockets = set()
 latest_data = {

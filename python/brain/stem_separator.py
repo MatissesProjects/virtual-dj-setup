@@ -10,7 +10,7 @@ class StemSeparator:
     Real-time stem separation worker.
     Uses audio-separator to isolate Vocals, Drums, Bass, and Other.
     """
-    def __init__(self, model_name="MDX_Net_UMX_HQ"): # Fast, reliable UMX model
+    def __init__(self, model_name="htdemucs_ft.yaml"): # High-quality 4-stem model
         print(f"[STEM] Initializing Separator with model: {model_name}...")
         self.separator = Separator()
         # Optimize for CPU/GPU depending on availability
