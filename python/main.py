@@ -17,6 +17,7 @@ from brain.music_analyzer import MusicAnalyzer
 from brain.bridge_generator import BridgeGenerator
 from brain.audience_listener import AudienceListener
 from brain.youtube_deck import YouTubeDeck
+from brain.set_orchestrator import SetOrchestrator
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -29,6 +30,20 @@ PLAYLIST = [
 # Track 19: YouTube Automation
 deck_a_browser = YouTubeDeck("Deck A")
 deck_b_browser = YouTubeDeck("Deck B")
+orchestrator = None # Global for main loop/API access
+
+class SetStart(BaseModel):
+    urls: list[str]
+
+@app.post("/start_set")
+async def start_set(start: SetStart):
+    orchestrator.start_set(start.urls)
+    return {"status": "ok"}
+
+@app.post("/transition")
+async def transition():
+    orchestrator.trigger_transition()
+    return {"status": "ok"}
 
 # Web Server for UI
 app = FastAPI()
@@ -160,6 +175,9 @@ def main():
     # Track 19: YouTube Automation
     deck_a_browser.start_in_thread()
     deck_b_browser.start_in_thread()
+
+    global orchestrator
+    orchestrator = SetOrchestrator(deck_a_browser, deck_b_browser, emitter)
 
     logger = StateActionLogger()
     
