@@ -16,6 +16,7 @@ from brain.stem_separator import StemSeparator
 from brain.music_analyzer import MusicAnalyzer
 from brain.bridge_generator import BridgeGenerator
 from brain.audience_listener import AudienceListener
+from brain.youtube_deck import YouTubeDeck
 from logger.state_action_logger import StateActionLogger
 
 # Sync with C# playlist
@@ -24,6 +25,10 @@ PLAYLIST = [
     {"title": "Blinding Lights", "artist": "The Weeknd"},
     {"title": "Levitating", "artist": "Dua Lipa"}
 ]
+
+# Track 19: YouTube Automation
+deck_a_browser = YouTubeDeck("Deck A")
+deck_b_browser = YouTubeDeck("Deck B")
 
 # Web Server for UI
 app = FastAPI()
@@ -48,6 +53,19 @@ class StemsUpdate(BaseModel):
     drums: float
     bass: float
     other: float
+
+class TrackLoad(BaseModel):
+    deck: int
+    url: str
+
+@app.post("/load_track")
+async def load_track(load: TrackLoad):
+    if load.deck == 0:
+        deck_a_browser.load_track(load.url)
+    else:
+        deck_b_browser.load_track(load.url)
+    return {"status": "ok"}
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -138,6 +156,10 @@ def main():
     # Track 15: Stem Separation
     stem_worker = StemSeparator()
     stem_worker.start()
+
+    # Track 19: YouTube Automation
+    deck_a_browser.start_in_thread()
+    deck_b_browser.start_in_thread()
 
     logger = StateActionLogger()
     

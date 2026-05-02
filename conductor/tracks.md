@@ -19,3 +19,4 @@
 - [Track 16: Generative "Bridge" Transitions (Transformer Bridge)](./tracks/track-16/index.md) - *Completed*
 - [Track 17: Multi-Modal Audience Vibe Modeling (Twitch Sentiment)](./tracks/track-17/index.md) - *Completed*
 - [Track 18: Stem-Aware Shader Visuals (Reactive Dashboard)](./tracks/track-18/index.md) - *Completed*
+- [Track 19: Playwright YouTube Decks Automation](./tracks/track-19/index.md) - *In Progress*

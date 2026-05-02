@@ -11,4 +11,5 @@ pyaudio
 matplotlib
 grpcio
 grpcio-tools
+playwright
 # Add other libraries as needed

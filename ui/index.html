@@ -24,8 +24,19 @@
     <div id="app">
         <h1>🎧 Virtual DJ Control Center</h1>
         <!-- ... rest of dashboard ... -->
-            <div class="card vibe-card">
-                <div class="label">Current AI Intent</div>
+                <div class="card vibe-card">
+                    <div class="label">YouTube Decks Automation</div>
+                    <div style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;">
+                        <input id="yt-url" type="text" placeholder="Paste YouTube URL here" style="background: #333; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 4px; font-size: 0.9em;">
+                        <div style="display: flex; gap: 10px;">
+                            <button @click="loadYoutube(0)" style="flex: 1; background: #03dac6;">LOAD DECK A</button>
+                            <button @click="loadYoutube(1)" style="flex: 1; background: #03dac6;">LOAD DECK B</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card vibe-card">
+                    <div class="label">Current AI Intent</div>
                 <div class="vibe-name">{{ vibe }}</div>
                 <div class="label">Authority: <span :style="{color: authority === 'HUMAN' ? '#cf6679' : '#03dac6'}">{{ authority }}</span></div>
                 
@@ -335,7 +346,17 @@
                     fetch('http://localhost:8000/generate-bridge', { method: 'POST' })
                 }
 
-                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, crowd, updateXFader, updateStems, takeover, yieldToAi, generateBridge }
+                const loadYoutube = (deckIndex) => {
+                    const url = document.getElementById('yt-url').value
+                    if (!url) return
+                    fetch('http://localhost:8000/load_track', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ deck: deckIndex, url: url })
+                    })
+                }
+
+                return { vibe, authority, rmsPercent, centroid, chords, duckingFreq, xfader, classification, stems, crowd, updateXFader, updateStems, takeover, yieldToAi, generateBridge, loadYoutube }
             }
         }).mount('#app')
     </script>
